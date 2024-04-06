@@ -96,3 +96,10 @@ func ExecuteCommand(cmd *Command, cs *CollectionStore) string {
 		return fmt.Sprintf("Unknown command: %s", cmd.Name)
 	}
 }
+
+func ShouldWriteLog(cmd Command) bool {
+	if cmd.Name == "SET" || cmd.Name == "DELETE" || cmd.Name == "SET-TTL" {
+		return true
+	}
+	return false
+}

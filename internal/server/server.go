@@ -58,7 +58,7 @@ func handleConnection(conn net.Conn, cs *CollectionStore) {
 			return
 		}
 		cmd := ParseCommand(command)
-		if cmd.Name == "SET" || cmd.Name == "DELETE" {
+		if ShouldWriteLog(*cmd) {
 			err = WriteCommandsToFile(*cmd, utils.DUMP_FILE_NAME)
 			if err != nil {
 				log.Printf("error writing operation to dump")
@@ -81,7 +81,7 @@ func handleInitLoad(cs *CollectionStore) error {
 		return err
 	}
 	for _, cmd := range cmds {
-		if cmd.Name == "SET" || cmd.Name == "DELETE" {
+		if ShouldWriteLog(cmd) {
 			result := ExecuteCommand(&cmd, cs)
 			log.Printf("successfully executed curr cmd: %v ------------ %v", cmd, result)
 		}
