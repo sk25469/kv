@@ -1,0 +1,16 @@
+{"Name":"SET","CollectionName":"col1","Args":["key1","value1"],"Result":""}
+{"Name":"SET","CollectionName":"col2","Args":["key2","value1"],"Result":""}
+{"Name":"GET","CollectionName":"col1","Args":["key1"],"Result":""}
+{"Name":"SHOWALL","CollectionName":"*","Args":["*"],"Result":""}
+{"Name":"GET","CollectionName":"col1","Args":["key1"],"Result":""}
+{"Name":"GET","CollectionName":"col1","Args":["key1"],"Result":""}
+{"Name":"GET","CollectionName":"col1","Args":["key1"],"Result":""}
+{"Name":"GET","CollectionName":"col1","Args":["key1"],"Result":""}
+{"Name":"GET","CollectionName":"col1","Args":["key1"],"Result":""}
+{"Name":"GET","CollectionName":"col1","Args":["key1"],"Result":""}
+{"Name":"GET","CollectionName":"col1","Args":["key1"],"Result":""}
+{"Name":"SHOW","CollectionName":"*","Args":["*"],"Result":""}
+{"Name":"SHOW","CollectionName":"col1","Args":[],"Result":""}
+{"Name":"SHOW","CollectionName":"col1","Args":[],"Result":""}
+{"Name":"SHOW","CollectionName":"col1","Args":[],"Result":""}
+{"Name":"SHOWALL","CollectionName":"*","Args":[],"Result":""}
