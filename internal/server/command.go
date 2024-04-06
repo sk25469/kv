@@ -38,6 +38,20 @@ func ParseCommand(rawCommand string) *Command {
 // ExecuteCommand executes a command and returns the result
 func ExecuteCommand(cmd *Command, cs *CollectionStore) string {
 	switch cmd.Name {
+	case "SET-TTL":
+		if len(cmd.Args) < 1 {
+			return "Usage: SET-TTL <collection> <key> <ttl>"
+		}
+		key := cmd.Args[0]
+		collectionName := cmd.CollectionName
+		ttl := cmd.Args[1]
+		duration, err := utils.ParseDuration(ttl)
+		if err != nil {
+			log.Printf("invalid time format: %v", err)
+			return "Usage: SET-TTL <collection> <key> <ttl (xm xhxm xxs)>"
+		}
+		cs.UpdateKeyInCollectionWithTTL(collectionName, key, duration)
+		return "OK"
 	case "SET":
 		if len(cmd.Args) < 2 {
 			return "Usage: SET <collection> <key> <value>"

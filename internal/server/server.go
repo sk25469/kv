@@ -29,6 +29,7 @@ func Start() {
 		return
 	}
 
+	log.Printf("starting TTL cleanups")
 	StartKVCleanup(cs, utils.CLEANUP_DURATION)
 
 	for {

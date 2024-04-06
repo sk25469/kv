@@ -3,6 +3,7 @@ package server
 import (
 	"log"
 	"sync"
+	"time"
 )
 
 // CollectionStore represents a collection with a key-value store
@@ -18,6 +19,21 @@ func NewCollectionStore() *CollectionStore {
 		KeyValueStore: NewKeyValueStore(),
 		collections:   make(map[string]*KeyValueStore),
 	}
+}
+
+func (cs *CollectionStore) UpdateKeyInCollectionWithTTL(collectionName, key string, ttl time.Duration) {
+	cs.mu.Lock()
+	defer cs.mu.Unlock()
+
+	// Check if the collection exists
+	coll, ok := cs.collections[collectionName]
+	if !ok {
+		// Create a new collection if it doesn't exist
+		log.Printf("collection with %v doesn't exist, creating...", collectionName)
+	}
+
+	// Set the key-value pair in the collection
+	coll.UpdateKeyWithTTL(key, ttl)
 }
 
 // SetKeyInCollection sets a key-value pair in the specified collection
