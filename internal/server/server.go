@@ -53,9 +53,11 @@ func handleConnection(conn net.Conn, cs *CollectionStore) {
 			return
 		}
 		cmd := ParseCommand(command)
-		err = WriteCommandsToFile(*cmd, "dump.txt")
-		if err != nil {
-			log.Printf("error writing operation to dump")
+		if cmd.Name == "SET" || cmd.Name == "DELETE" {
+			err = WriteCommandsToFile(*cmd, "dump.txt")
+			if err != nil {
+				log.Printf("error writing operation to dump")
+			}
 		}
 		result := ExecuteCommand(cmd, cs)
 		log.Printf("result for cmd: %v -------- %v", cmd, result)
