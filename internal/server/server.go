@@ -29,6 +29,8 @@ func Start() {
 		return
 	}
 
+	StartKVCleanup(cs, utils.CLEANUP_DURATION)
+
 	for {
 		conn, err := listener.Accept()
 		if err != nil {

@@ -89,7 +89,7 @@ func (cs *CollectionStore) GetAllKeyValues() map[string]map[string]string {
 		keyValuePairs := make(map[string]string)
 		coll.mu.RLock()
 		for key, value := range coll.store {
-			keyValuePairs[key] = value
+			keyValuePairs[key] = value.Value
 		}
 		coll.mu.RUnlock()
 		result[collName] = keyValuePairs
@@ -117,7 +117,7 @@ func (cs *CollectionStore) GetAllKeyValuesInCollection(collectionName string) ma
 
 	// Copy the key-value pairs from the collection's KeyValueStore
 	for key, value := range coll.store {
-		result[key] = value
+		result[key] = value.Value
 	}
 
 	log.Printf("all keys in collection: %v ----------- %v", collectionName, result)
