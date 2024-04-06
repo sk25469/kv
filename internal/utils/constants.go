@@ -10,6 +10,6 @@ var (
 )
 
 const (
-	DUMP_FILE_NAME   = "dump.txt"
+	DUMP_FILE_NAME   = "snapshot.txt"
 	CLEANUP_DURATION = time.Duration(1 * time.Minute)
 )
