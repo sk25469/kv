@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+
+	"github.com/sk25469/kv/internal/utils"
 )
 
 // Start initializes the server
@@ -54,7 +56,7 @@ func handleConnection(conn net.Conn, cs *CollectionStore) {
 		}
 		cmd := ParseCommand(command)
 		if cmd.Name == "SET" || cmd.Name == "DELETE" {
-			err = WriteCommandsToFile(*cmd, "dump.txt")
+			err = WriteCommandsToFile(*cmd, utils.DUMP_FILE_NAME)
 			if err != nil {
 				log.Printf("error writing operation to dump")
 			}
@@ -70,7 +72,7 @@ func handleConnection(conn net.Conn, cs *CollectionStore) {
 }
 
 func handleInitLoad(cs *CollectionStore) error {
-	cmds, err := ReadCommandsFromFile("dump.txt")
+	cmds, err := ReadCommandsFromFile(utils.DUMP_FILE_NAME)
 	if err != nil {
 		log.Printf("error reading cmds from file: [%v]", err)
 		return err
