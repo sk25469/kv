@@ -11,6 +11,10 @@ import (
 	"time"
 )
 
+func GetParsedIP(ip string) string {
+	return strings.Split(ip, ":")[0]
+}
+
 // GenerateBase64ClientID generates a Base64 client ID based on the client's IP address
 func GenerateBase64ClientID(ipAddress string) (string, error) {
 	// Parse the IP address string

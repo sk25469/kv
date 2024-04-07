@@ -51,7 +51,7 @@ func Start() {
 func handleConnection(conn net.Conn, cs *models.CollectionStore, kvServer *models.KVServer) {
 
 	reader := bufio.NewReader(conn)
-	remoteAddress := conn.RemoteAddr().String()
+	remoteAddress := utils.GetParsedIP(conn.RemoteAddr().String())
 	clientId, err := utils.GenerateBase64ClientID(remoteAddress)
 	if err != nil {
 		log.Printf("error generating client id: %v", err)
