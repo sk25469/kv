@@ -8,6 +8,108 @@ import (
 	"github.com/sk25469/kv/internal/server"
 )
 
+func BenchmarkParseCommand(b *testing.B) {
+	// Raw command string to parse
+	rawCommand := "SET collection1 key1 value1"
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		// Perform command parsing
+		server.ParseCommand(rawCommand)
+	}
+}
+
+func BenchmarkExecuteCommand(b *testing.B) {
+	// Initialize your key-value database
+	cs := server.NewCollectionStore()
+	ts := server.NewTransactionalKeyValueStore()
+
+	// Raw command string to parse
+	rawCommand := "SET collection1 key1 value1"
+	cmd := server.ParseCommand(rawCommand)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		// Perform command execution
+		server.ExecuteCommand(cmd, cs, ts)
+	}
+}
+
+func BenchmarkBeginTransaction(b *testing.B) {
+	// Initialize your key-value database
+	ts := server.NewTransactionalKeyValueStore()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		// Perform begin transaction operation
+		ts.BeginTransaction()
+	}
+}
+
+func BenchmarkExecTransaction(b *testing.B) {
+	// Initialize your key-value database
+	ts := server.NewTransactionalKeyValueStore()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		// Perform exec transaction operation
+		ts.ExecTransaction()
+	}
+}
+
+func BenchmarkRollbackTransaction(b *testing.B) {
+	// Initialize your key-value database
+	ts := server.NewTransactionalKeyValueStore()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		// Perform rollback transaction operation
+		ts.RollbackTransaction()
+	}
+}
+
+func BenchmarkSetTransaction(b *testing.B) {
+	// Initialize your key-value database
+	ts := server.NewTransactionalKeyValueStore()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		// Perform set operation
+		ts.Set(fmt.Sprintf("key%d", i), fmt.Sprintf("value%d", i))
+	}
+}
+
+func BenchmarkGetTransaction(b *testing.B) {
+	// Initialize your key-value database
+	ts := server.NewTransactionalKeyValueStore()
+
+	// Preload the database with test data
+	for i := 0; i < b.N; i++ {
+		ts.Set(fmt.Sprintf("key%d", i), fmt.Sprintf("value%d", i))
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		// Perform get operation
+		ts.Get(fmt.Sprintf("key%d", i))
+	}
+}
+
+func BenchmarkKTransaction(b *testing.B) {
+	// Initialize your key-value database
+	ts := server.NewTransactionalKeyValueStore()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		// Perform set operation
+		ts.Set(fmt.Sprintf("key%d", i), fmt.Sprintf("value%d", i))
+		ts.Get(fmt.Sprintf("key%d", i))
+		ts.BeginTransaction()
+		ts.ExecTransaction()
+		ts.RollbackTransaction()
+	}
+}
+
 func BenchmarkSet(b *testing.B) {
 	// Initialize your key-value database
 	cs := server.NewCollectionStore()

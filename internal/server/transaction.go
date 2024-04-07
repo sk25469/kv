@@ -33,7 +33,7 @@ func (kv *TransactionalKeyValueStore) ExecTransaction() {
 }
 
 func (kv *TransactionalKeyValueStore) RollbackTransaction() {
-	for i := len(kv.logger.logs); i >= 0; i-- {
+	for i := len(kv.logger.logs) - 1; i >= 0; i-- {
 		log := kv.logger.logs[i]
 		parts := kv.parseLog(log)
 		if parts == nil {
@@ -50,7 +50,7 @@ func (kv *TransactionalKeyValueStore) parseLog(log string) []string {
 	return strings.Split(log, " ")
 }
 
-func (kv *TransactionalKeyValueStore) Set(key, value string, exec bool) {
+func (kv *TransactionalKeyValueStore) Set(key, value string) {
 	kv.mutex.Lock()
 	defer kv.mutex.Unlock()
 

@@ -36,8 +36,25 @@ func ParseCommand(rawCommand string) *Command {
 }
 
 // ExecuteCommand executes a command and returns the result
-func ExecuteCommand(cmd *Command, cs *CollectionStore) string {
+func ExecuteCommand(cmd *Command, cs *CollectionStore, ts *TransactionalKeyValueStore) string {
 	switch cmd.Name {
+	case "BEGIN":
+		ts.BeginTransaction()
+		return "OK"
+	case "COMMIT":
+		ts.ExecTransaction()
+		return "OK"
+	case "ROLLBACK":
+		ts.RollbackTransaction()
+		return "OK"
+	case "TSET":
+		if len(cmd.Args) < 2 {
+			return "Usage: TSET <key> <value>"
+		}
+		key := cmd.Args[0]
+		value := strings.Join(cmd.Args[1:], " ")
+		ts.Set(key, value)
+		return "OK"
 	case "SET-TTL":
 		if len(cmd.Args) < 1 {
 			return "Usage: SET-TTL <collection> <key> <ttl>"

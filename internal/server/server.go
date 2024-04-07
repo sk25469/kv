@@ -49,6 +49,7 @@ func handleConnection(conn net.Conn, cs *CollectionStore) {
 
 	// Create a bufio reader to read from the connection
 	reader := bufio.NewReader(conn)
+	ts := NewTransactionalKeyValueStore()
 
 	for {
 		// Read the next line from the connection
@@ -64,7 +65,7 @@ func handleConnection(conn net.Conn, cs *CollectionStore) {
 				log.Printf("error writing operation to dump")
 			}
 		}
-		result := ExecuteCommand(cmd, cs)
+		result := ExecuteCommand(cmd, cs, ts)
 		log.Printf("result for cmd: %v -------- %v", cmd, result)
 		bytesWritten, err := fmt.Fprintln(conn, result)
 		if err != nil {
@@ -82,7 +83,7 @@ func handleInitLoad(cs *CollectionStore) error {
 	}
 	for _, cmd := range cmds {
 		if ShouldWriteLog(cmd) {
-			result := ExecuteCommand(&cmd, cs)
+			result := ExecuteCommand(&cmd, cs, nil)
 			log.Printf("successfully executed curr cmd: %v ------------ %v", cmd, result)
 		}
 	}
