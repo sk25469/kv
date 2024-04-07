@@ -32,7 +32,7 @@ func BenchmarkExecuteCommand(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		// Perform command execution
-		server.ExecuteCommand(cmd, cs, ts)
+		server.ExecuteCommand(cmd, cs, ts, nil)
 	}
 }
 

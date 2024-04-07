@@ -33,6 +33,9 @@ func Start() {
 	log.Printf("starting TTL cleanups")
 	StartKVCleanup(cs, utils.CLEANUP_DURATION)
 
+	// Accept client connections
+	kvServer := models.NewKVServer()
+
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
@@ -40,16 +43,31 @@ func Start() {
 			continue
 		}
 		log.Printf("connected with client: %v", conn)
-		go handleConnection(conn, cs)
+		go handleConnection(conn, cs, kvServer)
 	}
 }
 
 // handleConnection handles client connections
-func handleConnection(conn net.Conn, cs *models.CollectionStore) {
-	defer conn.Close()
+func handleConnection(conn net.Conn, cs *models.CollectionStore, kvServer *models.KVServer) {
+
+	reader := bufio.NewReader(conn)
+	remoteAddress := conn.RemoteAddr().String()
+	clientId, err := utils.GenerateBase64ClientID(remoteAddress)
+	if err != nil {
+		log.Printf("error generating client id: %v", err)
+		return
+	}
+	kvServer.HandleClientConnect(clientId, remoteAddress)
+
+	clientConfig, _ := kvServer.GetClientConfig(clientId)
+
+	// handle client disconnection
+	defer func(clientId string) {
+		conn.Close()
+		kvServer.HandleClientDisconnect(clientId)
+	}(clientId)
 
 	// Create a bufio reader to read from the connection
-	reader := bufio.NewReader(conn)
 	ts := models.NewTransactionalKeyValueStore()
 
 	for {
@@ -66,7 +84,7 @@ func handleConnection(conn net.Conn, cs *models.CollectionStore) {
 				log.Printf("error writing operation to dump")
 			}
 		}
-		result := ExecuteCommand(cmd, cs, ts)
+		result := ExecuteCommand(cmd, cs, ts, clientConfig)
 		log.Printf("result for cmd: %v -------- %v", cmd, result)
 		bytesWritten, err := fmt.Fprintln(conn, result)
 		if err != nil {
@@ -84,7 +102,7 @@ func handleInitLoad(cs *models.CollectionStore) error {
 	}
 	for _, cmd := range cmds {
 		if ShouldWriteLog(cmd) {
-			result := ExecuteCommand(&cmd, cs, nil)
+			result := ExecuteCommand(&cmd, cs, nil, nil)
 			log.Printf("successfully executed curr cmd: %v ------------ %v", cmd, result)
 		}
 	}
