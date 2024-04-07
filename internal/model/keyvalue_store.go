@@ -9,13 +9,13 @@ import (
 // KeyValueStore represents the in-memory key-value store
 type KeyValueStore struct {
 	mu    sync.RWMutex
-	store map[string]*KeyValue
+	store map[string]*Value
 }
 
 // NewKeyValueStore creates a new instance of KeyValueStore
 func NewKeyValueStore() *KeyValueStore {
 	return &KeyValueStore{
-		store: make(map[string]*KeyValue),
+		store: make(map[string]*Value),
 	}
 }
 

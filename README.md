@@ -2,5 +2,5 @@
 
 ## Next features:
 1. Add TTL (time to live) for each of the kv (DONE)
-2. Add transactions (inprogress)
-3. Pub-sub
+2. Add transactions (done)
+3. Pub-sub (done)
