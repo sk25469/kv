@@ -1,23 +1,21 @@
-package server
+package models
 
 import (
 	"log"
 	"sync"
 	"time"
-
-	models "github.com/sk25469/kv/internal/model"
 )
 
 // KeyValueStore represents the in-memory key-value store
 type KeyValueStore struct {
 	mu    sync.RWMutex
-	store map[string]*models.KeyValue
+	store map[string]*KeyValue
 }
 
 // NewKeyValueStore creates a new instance of KeyValueStore
 func NewKeyValueStore() *KeyValueStore {
 	return &KeyValueStore{
-		store: make(map[string]*models.KeyValue),
+		store: make(map[string]*KeyValue),
 	}
 }
 
@@ -33,7 +31,7 @@ func (kv *KeyValueStore) UpdateKeyWithTTL(key string, ttl time.Duration) {
 func (kv *KeyValueStore) SetKeyWithTTL(key, value string, ttl time.Duration) {
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
-	keyValue := models.NewKeyValue(value)
+	keyValue := NewKeyValue(value)
 	keyValue.SetExpiration(ttl)
 	kv.store[key] = keyValue
 }
@@ -42,7 +40,7 @@ func (kv *KeyValueStore) SetKeyWithTTL(key, value string, ttl time.Duration) {
 func (kv *KeyValueStore) Set(key, value string) {
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
-	keyValue := models.NewKeyValue(value)
+	keyValue := NewKeyValue(value)
 	kv.store[key] = keyValue
 }
 

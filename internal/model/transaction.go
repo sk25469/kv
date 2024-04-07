@@ -1,4 +1,4 @@
-package server
+package models
 
 import (
 	"errors"
@@ -6,8 +6,6 @@ import (
 	"log"
 	"strings"
 	"sync"
-
-	models "github.com/sk25469/kv/internal/model"
 )
 
 type TransactionalKeyValueStore struct {
@@ -46,7 +44,7 @@ func (kv *TransactionalKeyValueStore) RollbackTransaction() {
 		key := parts[2]
 		prevValue := parts[4]
 		kvStore := kv.data[collection]
-		kvStore.store[key] = models.NewKeyValue(prevValue)
+		kvStore.store[key] = NewKeyValue(prevValue)
 	}
 	kv.logger.logs = nil // Clear transaction log
 }
@@ -75,9 +73,9 @@ func (kv *TransactionalKeyValueStore) Set(collection, key, value string) {
 	if !ok {
 		log.Printf("creating new kvStore for collection: %s", collection)
 		kvStore = NewKeyValueStore()
-		kvStore.store[key] = models.NewKeyValue(value)
+		kvStore.store[key] = NewKeyValue(value)
 	} else {
-		kvStore.store[key] = models.NewKeyValue(value)
+		kvStore.store[key] = NewKeyValue(value)
 	}
 	kv.data[collection] = kvStore
 	log.Printf("kvStore: %v", kvStore.store)

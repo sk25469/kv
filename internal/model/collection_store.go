@@ -1,4 +1,4 @@
-package server
+package models
 
 import (
 	"log"
@@ -19,6 +19,12 @@ func NewCollectionStore() *CollectionStore {
 		KeyValueStore: NewKeyValueStore(),
 		collections:   make(map[string]*KeyValueStore),
 	}
+}
+
+func (cs *CollectionStore) GetCollection() map[string]*KeyValueStore {
+	cs.mu.RLock()
+	defer cs.mu.RUnlock()
+	return cs.collections
 }
 
 func (cs *CollectionStore) UpdateKeyInCollectionWithTTL(collectionName, key string, ttl time.Duration) {

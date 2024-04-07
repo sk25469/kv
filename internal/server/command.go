@@ -5,6 +5,7 @@ import (
 	"log"
 	"strings"
 
+	models "github.com/sk25469/kv/internal/model"
 	"github.com/sk25469/kv/internal/utils"
 )
 
@@ -45,7 +46,7 @@ func ParseCommand(rawCommand string) *Command {
 }
 
 // ExecuteCommand executes a command and returns the result
-func ExecuteCommand(cmd *Command, cs *CollectionStore, ts *TransactionalKeyValueStore) string {
+func ExecuteCommand(cmd *Command, cs *models.CollectionStore, ts *models.TransactionalKeyValueStore) string {
 	switch cmd.Name {
 	case "BEGIN":
 		ts.BeginTransaction()

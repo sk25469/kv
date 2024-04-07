@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 
+	models "github.com/sk25469/kv/internal/model"
 	"github.com/sk25469/kv/internal/utils"
 )
 
@@ -21,7 +22,7 @@ func Start() {
 	log.Println("Server is listening on port 7000...")
 
 	log.Printf("creating the collection store")
-	cs := NewCollectionStore()
+	cs := models.NewCollectionStore()
 
 	err = handleInitLoad(cs)
 	if err != nil {
@@ -44,12 +45,12 @@ func Start() {
 }
 
 // handleConnection handles client connections
-func handleConnection(conn net.Conn, cs *CollectionStore) {
+func handleConnection(conn net.Conn, cs *models.CollectionStore) {
 	defer conn.Close()
 
 	// Create a bufio reader to read from the connection
 	reader := bufio.NewReader(conn)
-	ts := NewTransactionalKeyValueStore()
+	ts := models.NewTransactionalKeyValueStore()
 
 	for {
 		// Read the next line from the connection
@@ -75,7 +76,7 @@ func handleConnection(conn net.Conn, cs *CollectionStore) {
 	}
 }
 
-func handleInitLoad(cs *CollectionStore) error {
+func handleInitLoad(cs *models.CollectionStore) error {
 	cmds, err := ReadCommandsFromFile(utils.DUMP_FILE_NAME)
 	if err != nil {
 		log.Printf("error reading cmds from file: [%v]", err)

@@ -5,6 +5,7 @@ import (
 	"sync"
 	"testing"
 
+	models "github.com/sk25469/kv/internal/model"
 	"github.com/sk25469/kv/internal/server"
 )
 
@@ -21,8 +22,8 @@ func BenchmarkParseCommand(b *testing.B) {
 
 func BenchmarkExecuteCommand(b *testing.B) {
 	// Initialize your key-value database
-	cs := server.NewCollectionStore()
-	ts := server.NewTransactionalKeyValueStore()
+	cs := models.NewCollectionStore()
+	ts := models.NewTransactionalKeyValueStore()
 
 	// Raw command string to parse
 	rawCommand := "SET collection1 key1 value1"
@@ -37,7 +38,7 @@ func BenchmarkExecuteCommand(b *testing.B) {
 
 func BenchmarkBeginTransaction(b *testing.B) {
 	// Initialize your key-value database
-	ts := server.NewTransactionalKeyValueStore()
+	ts := models.NewTransactionalKeyValueStore()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -48,7 +49,7 @@ func BenchmarkBeginTransaction(b *testing.B) {
 
 func BenchmarkExecTransaction(b *testing.B) {
 	// Initialize your key-value database
-	ts := server.NewTransactionalKeyValueStore()
+	ts := models.NewTransactionalKeyValueStore()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -59,7 +60,7 @@ func BenchmarkExecTransaction(b *testing.B) {
 
 func BenchmarkRollbackTransaction(b *testing.B) {
 	// Initialize your key-value database
-	ts := server.NewTransactionalKeyValueStore()
+	ts := models.NewTransactionalKeyValueStore()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -70,7 +71,7 @@ func BenchmarkRollbackTransaction(b *testing.B) {
 
 func BenchmarkSetTransaction(b *testing.B) {
 	// Initialize your key-value database
-	ts := server.NewTransactionalKeyValueStore()
+	ts := models.NewTransactionalKeyValueStore()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -81,7 +82,7 @@ func BenchmarkSetTransaction(b *testing.B) {
 
 func BenchmarkGetTransaction(b *testing.B) {
 	// Initialize your key-value database
-	ts := server.NewTransactionalKeyValueStore()
+	ts := models.NewTransactionalKeyValueStore()
 
 	// Preload the database with test data
 	for i := 0; i < b.N; i++ {
@@ -98,7 +99,7 @@ func BenchmarkGetTransaction(b *testing.B) {
 
 func BenchmarkKTransaction(b *testing.B) {
 	// Initialize your key-value database
-	ts := server.NewTransactionalKeyValueStore()
+	ts := models.NewTransactionalKeyValueStore()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -113,7 +114,7 @@ func BenchmarkKTransaction(b *testing.B) {
 
 func BenchmarkSet(b *testing.B) {
 	// Initialize your key-value database
-	cs := server.NewCollectionStore()
+	cs := models.NewCollectionStore()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -124,7 +125,7 @@ func BenchmarkSet(b *testing.B) {
 
 func BenchmarkGet(b *testing.B) {
 	// Initialize your key-value database
-	cs := server.NewCollectionStore()
+	cs := models.NewCollectionStore()
 
 	// Preload the database with test data
 	for i := 0; i < b.N; i++ {
@@ -141,7 +142,7 @@ func BenchmarkGet(b *testing.B) {
 // Example concurrent read-write test
 func TestConcurrentReadWrite(t *testing.T) {
 	// Initialize your key-value database
-	cs := server.NewCollectionStore()
+	cs := models.NewCollectionStore()
 
 	// Number of concurrent readers and writers
 	numReaders := 100
