@@ -3,6 +3,7 @@ package server
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 )
 
@@ -27,34 +28,35 @@ func (kv *TransactionalKeyValueStore) BeginTransaction() {
 	kv.logger.logs = nil // Clear transaction log
 }
 
-func (kv *TransactionalKeyValueStore) CommitTransaction() {
+func (kv *TransactionalKeyValueStore) ExecTransaction() {
 	kv.logger.logs = nil // Clear transaction log
 }
 
 func (kv *TransactionalKeyValueStore) RollbackTransaction() {
-	for _, log := range kv.logger.logs {
+	for i := len(kv.logger.logs); i >= 0; i-- {
+		log := kv.logger.logs[i]
 		parts := kv.parseLog(log)
 		if parts == nil {
 			continue
 		}
 		key := parts[0]
-		value := parts[1]
-		kv.data[key] = value
+		prevValue := parts[2]
+		kv.data[key] = prevValue
 	}
 	kv.logger.logs = nil // Clear transaction log
 }
 
 func (kv *TransactionalKeyValueStore) parseLog(log string) []string {
-	// Parse log format, e.g., "SET key value"
-	return nil
+	return strings.Split(log, " ")
 }
 
-func (kv *TransactionalKeyValueStore) Set(key, value string) {
+func (kv *TransactionalKeyValueStore) Set(key, value string, exec bool) {
 	kv.mutex.Lock()
 	defer kv.mutex.Unlock()
 
+	prevValue := kv.data[key]
 	kv.data[key] = value
-	kv.logger.logs = append(kv.logger.logs, fmt.Sprintf("SET %s %s", key, value))
+	kv.logger.logs = append(kv.logger.logs, fmt.Sprintf("SET %s %s %s", key, value, prevValue))
 }
 
 func (kv *TransactionalKeyValueStore) Get(key string) (string, error) {
