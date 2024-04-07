@@ -75,7 +75,7 @@ func BenchmarkSetTransaction(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		// Perform set operation
-		ts.Set(fmt.Sprintf("key%d", i), fmt.Sprintf("value%d", i))
+		ts.Set(fmt.Sprintf("col%d", i), fmt.Sprintf("key%d", i), fmt.Sprintf("value%d", i))
 	}
 }
 
@@ -85,13 +85,14 @@ func BenchmarkGetTransaction(b *testing.B) {
 
 	// Preload the database with test data
 	for i := 0; i < b.N; i++ {
-		ts.Set(fmt.Sprintf("key%d", i), fmt.Sprintf("value%d", i))
+		ts.Set(fmt.Sprintf("col%d", i), fmt.Sprintf("key%d", i), fmt.Sprintf("value%d", i))
+
 	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		// Perform get operation
-		ts.Get(fmt.Sprintf("key%d", i))
+		ts.Get(fmt.Sprintf("col%d", i), fmt.Sprintf("key%d", i))
 	}
 }
 
@@ -102,8 +103,8 @@ func BenchmarkKTransaction(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		// Perform set operation
-		ts.Set(fmt.Sprintf("key%d", i), fmt.Sprintf("value%d", i))
-		ts.Get(fmt.Sprintf("key%d", i))
+		ts.Set(fmt.Sprintf("col%d", i), fmt.Sprintf("key%d", i), fmt.Sprintf("value%d", i))
+		ts.Get(fmt.Sprintf("col%d", i), fmt.Sprintf("key%d", i))
 		ts.BeginTransaction()
 		ts.ExecTransaction()
 		ts.RollbackTransaction()

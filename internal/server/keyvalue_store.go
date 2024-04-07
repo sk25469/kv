@@ -33,8 +33,7 @@ func (kv *KeyValueStore) UpdateKeyWithTTL(key string, ttl time.Duration) {
 func (kv *KeyValueStore) SetKeyWithTTL(key, value string, ttl time.Duration) {
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
-	keyValue := models.NewKeyValue()
-	keyValue.Value = value
+	keyValue := models.NewKeyValue(value)
 	keyValue.SetExpiration(ttl)
 	kv.store[key] = keyValue
 }
@@ -43,8 +42,7 @@ func (kv *KeyValueStore) SetKeyWithTTL(key, value string, ttl time.Duration) {
 func (kv *KeyValueStore) Set(key, value string) {
 	kv.mu.Lock()
 	defer kv.mu.Unlock()
-	keyValue := models.NewKeyValue()
-	keyValue.Value = value
+	keyValue := models.NewKeyValue(value)
 	kv.store[key] = keyValue
 }
 

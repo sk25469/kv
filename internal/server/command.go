@@ -25,11 +25,20 @@ func ParseCommand(rawCommand string) *Command {
 		return nil // Ignore empty commands
 	}
 
+	collectionName := ""
+	Args := []string{}
+	if len(parts) >= 2 {
+		collectionName = parts[1]
+	}
+	if len(parts) > 2 {
+		Args = parts[2:]
+	}
+
 	// Create a new Command struct and populate its fields
 	cmd := &Command{
 		Name:           parts[0],
-		CollectionName: parts[1],
-		Args:           parts[2:],
+		CollectionName: collectionName,
+		Args:           Args,
 	}
 	log.Printf("current cmd: %v", cmd)
 	return cmd
@@ -49,12 +58,25 @@ func ExecuteCommand(cmd *Command, cs *CollectionStore, ts *TransactionalKeyValue
 		return "OK"
 	case "TSET":
 		if len(cmd.Args) < 2 {
-			return "Usage: TSET <key> <value>"
+			return "Usage: TSET <collection_name> <key> <value>"
 		}
 		key := cmd.Args[0]
+		collectionName := cmd.CollectionName
 		value := strings.Join(cmd.Args[1:], " ")
-		ts.Set(key, value)
+		ts.Set(collectionName, key, value)
 		return "OK"
+	case "TGET":
+		if len(cmd.Args) < 1 {
+			return "Usage: TSET <collection_name> <key> <value>"
+		}
+		key := cmd.Args[0]
+		collectionName := cmd.CollectionName
+		val, err := ts.Get(collectionName, key)
+		if err != nil {
+			log.Printf("error getting key from transaction: %v", err)
+			return "ERROR"
+		}
+		return val
 	case "SET-TTL":
 		if len(cmd.Args) < 1 {
 			return "Usage: SET-TTL <collection> <key> <ttl>"

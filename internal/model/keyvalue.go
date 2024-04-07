@@ -12,8 +12,9 @@ type KeyValue struct {
 	expiration time.Time
 }
 
-func NewKeyValue() *KeyValue {
+func NewKeyValue(val string) *KeyValue {
 	return &KeyValue{
+		Value:      val,
 		expiration: utils.INFINITY,
 	}
 }
