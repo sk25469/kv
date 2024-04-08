@@ -21,7 +21,7 @@ func main() {
 	fmt.Println("Port:", config.Port)
 	fmt.Println("Max Connections:", config.MaxConnections)
 	fmt.Println("Username:", config.Username)
-	fmt.Println("Password:", config.Password)
+	fmt.Println("Password:", config.GetPassword())
 	fmt.Println("Protected mode:", config.ProtectedMode)
 
 	server.Start(config)

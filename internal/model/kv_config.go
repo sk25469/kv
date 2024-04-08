@@ -30,7 +30,7 @@ func NewKVServer(config *Config) *KVServer {
 		clients: make(map[string]*ClientConfig),
 		auth: &Auth{
 			Username: config.Username,
-			Password: []byte(config.Password),
+			Password: []byte(config.GetPassword()),
 		},
 	}
 }
