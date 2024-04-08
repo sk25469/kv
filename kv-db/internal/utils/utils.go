@@ -10,6 +10,10 @@ import (
 	"github.com/google/uuid"
 )
 
+func ContainsPubSub(cmd string) bool {
+	return strings.Contains(cmd, "SUBSCRIBE") || strings.Contains(cmd, "PUBLISH")
+}
+
 func GetParsedIP(ip string) string {
 	return strings.Split(ip, ":")[0]
 }

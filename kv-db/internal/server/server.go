@@ -85,18 +85,10 @@ func handleConnection(conn net.Conn, cs *models.CollectionStore, kvServer *model
 			fmt.Println("Error reading from connection:", err)
 			return
 		}
-		cmd := strings.TrimSpace(command)
-		pubSubMode := false
+		cmd := ParseCommand(command)
 
-		// Check if the connection should switch to Pub/Sub mode
-		if cmd == "PUBSUB_MODE" {
-			pubSubMode = true
-			conn.Write([]byte("Switching to pub/sub mode. Ready for SUBSCRIBE and PUBLISH commands.\n"))
-			continue // Continue to the next iteration to handle Pub/Sub commands
-		}
-
-		if pubSubMode {
-			handlePubSubMode(conn, ps, clientConfig)
+		if utils.ContainsPubSub(cmd.Name) {
+			handlePubSubMode(cmd, conn, ps, clientConfig)
 		} else {
 			cmd := ParseCommand(command)
 			if ShouldWriteLog(*cmd) {
@@ -131,37 +123,24 @@ func handleInitLoad(cs *models.CollectionStore) error {
 	return nil
 }
 
-func handlePubSubMode(conn net.Conn, pubSub *models.PubSub, cc *models.ClientConfig) {
-	reader := bufio.NewReader(conn)
+func handlePubSubMode(cmd *Command, conn net.Conn, pubSub *models.PubSub, cc *models.ClientConfig) {
 
 	// Inform the client that it has entered pub/sub mode
 	conn.Write([]byte("Entering pub/sub mode. Ready for SUBSCRIBE and PUBLISH commands.\n"))
 
-	for {
-		rawCommand, err := reader.ReadString('\n')
-		if err != nil {
-			// Handle error or client disconnect
-			log.Printf("Error reading from connection: %v", err)
-			break
-		}
+	log.Printf("handling pubsub mode: %v", cmd)
 
-		cmd := ParseCommand(rawCommand)
-		if cmd == nil {
-			continue
-		}
-
-		// SUBSCRIBE <topic>
-		// PUBLISH <topic> <message>
-		if cmd.Name == "SUBSCRIBE" {
-			topic := cmd.CollectionName
-			subscribeToTopic(topic, conn, pubSub, cc)
-		} else if cmd.Name == "PUBLISH" {
-			topic := cmd.CollectionName
-			message := strings.Join(cmd.Args[0:], " ")
-			publishToTopic(topic, message, conn, pubSub)
-		} else {
-			conn.Write([]byte("Unknown command in pub/sub mode.\n"))
-		}
+	// SUBSCRIBE <topic>
+	// PUBLISH <topic> <message>
+	if strings.Contains(cmd.Name, "SUBSCRIBE") {
+		topic := cmd.CollectionName
+		subscribeToTopic(topic, conn, pubSub, cc)
+	} else if strings.Contains(cmd.Name, "PUBLISH") {
+		topic := cmd.CollectionName
+		message := strings.Join(cmd.Args[0:], " ")
+		publishToTopic(topic, message, conn, pubSub)
+	} else {
+		conn.Write([]byte("Unknown command in pub/sub mode.\n"))
 	}
 }
 
