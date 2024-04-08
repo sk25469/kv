@@ -1,16 +1,22 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 
 	models "github.com/sk25469/kv/internal/model"
 	"github.com/sk25469/kv/internal/server"
-	"github.com/sk25469/kv/internal/utils"
 )
 
 func main() {
 	fmt.Println("Starting Key-Value Store Server...")
-	config, err := models.LoadConfig(utils.CONFIG_FILE)
+
+	configFile := flag.String("config", "", "config file path")
+
+	flag.Parse()
+	fmt.Printf("Loading configuration from file: %v\n", configFile)
+
+	config, err := models.LoadConfig(*configFile)
 	if err != nil {
 		fmt.Println("Error loading configuration:", err)
 		return
