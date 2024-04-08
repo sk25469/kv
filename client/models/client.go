@@ -5,6 +5,7 @@ package models
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"net"
 )
 
@@ -94,6 +95,7 @@ func (c *KVClient) Subscribe(topic string) (<-chan string, error) {
 				return
 			}
 			messages <- response
+			log.Printf("incoming message: %v", response)
 		}
 	}()
 

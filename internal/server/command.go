@@ -46,7 +46,7 @@ func ParseCommand(rawCommand string) *Command {
 }
 
 // ExecuteCommand executes a command and returns the result
-func ExecuteCommand(cmd *Command, cs *models.CollectionStore, ts *models.TransactionalKeyValueStore, cc *models.ClientConfig, kv *models.KVServer) string {
+func ExecuteCommand(cmd *Command, cs *models.CollectionStore, ts *models.TransactionalKeyValueStore, cc *models.ClientConfig, kv *models.KVServer, ps *models.PubSub) string {
 	switch cmd.Name {
 	case "AUTH":
 		if !kv.Config.ProtectedMode {

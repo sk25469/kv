@@ -12,7 +12,8 @@ var (
 const (
 	DUMP_FILE_NAME   = "snapshot.txt"
 	CLEANUP_DURATION = time.Duration(1 * time.Minute)
-	TRANSACTIONAL    = "transactional"
-	ACTIVE           = "active"
+	TRANSACTIONAL    = 0
+	ACTIVE           = 1
 	CONFIG_FILE      = "kv.conf"
+	PUB_SUB          = 2
 )

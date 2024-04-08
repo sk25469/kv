@@ -18,7 +18,7 @@ type ClientConfig struct {
 // - active
 
 type ClientState struct {
-	State           string
+	State           int
 	IsAuthenticated bool
 }
 

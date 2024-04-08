@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"strings"
 
 	models "github.com/sk25469/kv/internal/model"
 	"github.com/sk25469/kv/internal/utils"
@@ -23,6 +24,7 @@ func Start(config *models.Config) {
 
 	log.Printf("creating the collection store")
 	cs := models.NewCollectionStore()
+	ps := models.NewPubSub()
 
 	err = handleInitLoad(cs)
 	if err != nil {
@@ -43,12 +45,12 @@ func Start(config *models.Config) {
 			continue
 		}
 		log.Printf("connected with client: %v", conn)
-		go handleConnection(conn, cs, kvServer)
+		go handleConnection(conn, cs, kvServer, ps)
 	}
 }
 
 // handleConnection handles client connections
-func handleConnection(conn net.Conn, cs *models.CollectionStore, kvServer *models.KVServer) {
+func handleConnection(conn net.Conn, cs *models.CollectionStore, kvServer *models.KVServer, ps *models.PubSub) {
 
 	reader := bufio.NewReader(conn)
 	remoteAddress := utils.GetParsedIP(conn.RemoteAddr().String())
@@ -77,6 +79,10 @@ func handleConnection(conn net.Conn, cs *models.CollectionStore, kvServer *model
 			fmt.Println("Error reading from connection:", err)
 			return
 		}
+		if strings.TrimSpace(command) == "PUBSUB_MODE" {
+			handlePubSubMode(conn, ps, clientConfig)
+			return // Exit the main command handler
+		}
 		cmd := ParseCommand(command)
 		if ShouldWriteLog(*cmd) {
 			err = WriteCommandsToFile(*cmd, utils.DUMP_FILE_NAME)
@@ -84,7 +90,7 @@ func handleConnection(conn net.Conn, cs *models.CollectionStore, kvServer *model
 				log.Printf("error writing operation to dump")
 			}
 		}
-		result := ExecuteCommand(cmd, cs, ts, clientConfig, kvServer)
+		result := ExecuteCommand(cmd, cs, ts, clientConfig, kvServer, ps)
 		log.Printf("result for cmd: %v -------- %v", cmd, result)
 		bytesWritten, err := fmt.Fprintln(conn, result)
 		if err != nil {
@@ -102,9 +108,54 @@ func handleInitLoad(cs *models.CollectionStore) error {
 	}
 	for _, cmd := range cmds {
 		if ShouldWriteLog(cmd) {
-			result := ExecuteCommand(&cmd, cs, nil, &models.ClientConfig{ClientState: &models.ClientState{State: utils.ACTIVE, IsAuthenticated: true}}, &models.KVServer{Config: &models.Config{ProtectedMode: false}})
+			result := ExecuteCommand(&cmd, cs, nil, &models.ClientConfig{ClientState: &models.ClientState{State: utils.ACTIVE, IsAuthenticated: true}}, &models.KVServer{Config: &models.Config{ProtectedMode: false}}, nil)
 			log.Printf("successfully executed curr cmd: %v ------------ %v", cmd, result)
 		}
 	}
 	return nil
+}
+
+func handlePubSubMode(conn net.Conn, pubSub *models.PubSub, cc *models.ClientConfig) {
+	reader := bufio.NewReader(conn)
+
+	// Inform the client that it has entered pub/sub mode
+	conn.Write([]byte("Entering pub/sub mode. Ready for SUBSCRIBE and PUBLISH commands.\n"))
+
+	for {
+		rawCommand, err := reader.ReadString('\n')
+		if err != nil {
+			// Handle error or client disconnect
+			log.Printf("Error reading from connection: %v", err)
+			break
+		}
+
+		cmd := ParseCommand(rawCommand)
+		if cmd == nil {
+			continue
+		}
+
+		// SUBSCRIBE <topic>
+		// PUBLISH <topic> <message>
+		if cmd.Name == "SUBSCRIBE" {
+			topic := cmd.CollectionName
+			subscribeToTopic(topic, conn, pubSub, cc)
+		} else if cmd.Name == "PUBLISH" {
+			topic := cmd.CollectionName
+			message := strings.Join(cmd.Args[0:], " ")
+			publishToTopic(topic, message, conn, pubSub)
+		} else {
+			conn.Write([]byte("Unknown command in pub/sub mode.\n"))
+		}
+	}
+}
+
+func subscribeToTopic(topic string, conn net.Conn, pubSub *models.PubSub, cc *models.ClientConfig) {
+	pubSub.Subscribe(topic, conn, cc)
+	// Inform the client of successful subscription
+	conn.Write([]byte("Subscribed to " + topic + "\n"))
+}
+
+func publishToTopic(topic, message string, conn net.Conn, pubSub *models.PubSub) {
+	pubSub.Publish(topic, message)
+	conn.Write([]byte("Published message to " + topic + "\n"))
 }
