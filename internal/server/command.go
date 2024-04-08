@@ -46,21 +46,48 @@ func ParseCommand(rawCommand string) *Command {
 }
 
 // ExecuteCommand executes a command and returns the result
-func ExecuteCommand(cmd *Command, cs *models.CollectionStore, ts *models.TransactionalKeyValueStore, cc *models.ClientConfig) string {
+func ExecuteCommand(cmd *Command, cs *models.CollectionStore, ts *models.TransactionalKeyValueStore, cc *models.ClientConfig, kv *models.KVServer) string {
 	switch cmd.Name {
+	case "AUTH":
+		if !kv.Config.ProtectedMode {
+			return "No need of password without protected mode"
+		}
+		if len(cmd.Args) < 1 {
+			return "Usage: AUTH <username> <password>"
+		}
+		username := cmd.CollectionName
+		password := cmd.Args[0]
+		result, ok := kv.Authenticate(username, password)
+		if !ok {
+			return result
+		}
+		cc.ClientState.IsAuthenticated = true
+		return result
 	case "BEGIN":
+		if !cc.ClientState.IsAuthenticated && kv.Config.ProtectedMode {
+			return "unauthorized"
+		}
 		ts.BeginTransaction()
 		cc.ClientState.State = utils.TRANSACTIONAL
 		return "OK"
 	case "COMMIT":
+		if !cc.ClientState.IsAuthenticated && kv.Config.ProtectedMode {
+			return "unauthorized"
+		}
 		ts.ExecTransaction()
 		cc.ClientState.State = utils.ACTIVE
 		return "OK"
 	case "ROLLBACK":
+		if !cc.ClientState.IsAuthenticated && kv.Config.ProtectedMode {
+			return "unauthorized"
+		}
 		ts.RollbackTransaction()
 		cc.ClientState.State = utils.ACTIVE
 		return "OK"
 	case "TSET":
+		if !cc.ClientState.IsAuthenticated && kv.Config.ProtectedMode {
+			return "unauthorized"
+		}
 		if cc.ClientState.State != utils.TRANSACTIONAL {
 			return "ERROR: Transaction not started"
 		}
@@ -73,6 +100,9 @@ func ExecuteCommand(cmd *Command, cs *models.CollectionStore, ts *models.Transac
 		ts.Set(collectionName, key, value)
 		return "OK"
 	case "TGET":
+		if !cc.ClientState.IsAuthenticated && kv.Config.ProtectedMode {
+			return "unauthorized"
+		}
 		if cc.ClientState.State != utils.TRANSACTIONAL {
 			return "ERROR: Transaction not started"
 		}
@@ -88,6 +118,9 @@ func ExecuteCommand(cmd *Command, cs *models.CollectionStore, ts *models.Transac
 		}
 		return val
 	case "SET-TTL":
+		if !cc.ClientState.IsAuthenticated && kv.Config.ProtectedMode {
+			return "unauthorized"
+		}
 		if len(cmd.Args) < 1 {
 			return "Usage: SET-TTL <collection> <key> <ttl>"
 		}
@@ -102,6 +135,9 @@ func ExecuteCommand(cmd *Command, cs *models.CollectionStore, ts *models.Transac
 		cs.UpdateKeyInCollectionWithTTL(collectionName, key, duration)
 		return "OK"
 	case "SET":
+		if !cc.ClientState.IsAuthenticated && kv.Config.ProtectedMode {
+			return "unauthorized"
+		}
 		if len(cmd.Args) < 2 {
 			return "Usage: SET <collection> <key> <value>"
 		}
@@ -112,6 +148,9 @@ func ExecuteCommand(cmd *Command, cs *models.CollectionStore, ts *models.Transac
 		cs.SetKeyInCollection(collectionName, key, value)
 		return "OK"
 	case "GET":
+		if !cc.ClientState.IsAuthenticated && kv.Config.ProtectedMode {
+			return "unauthorized"
+		}
 		if len(cmd.Args) < 1 {
 			return "Usage: GET <collection> <key>"
 		}
@@ -119,6 +158,9 @@ func ExecuteCommand(cmd *Command, cs *models.CollectionStore, ts *models.Transac
 		collectionName := cmd.CollectionName
 		return cs.GetKeyInCollection(collectionName, key)
 	case "SHOWALL":
+		if !cc.ClientState.IsAuthenticated && kv.Config.ProtectedMode {
+			return "unauthorized"
+		}
 		result := cs.GetAllKeyValues()
 		jsonString, err := utils.MapToJSON(result)
 		if err != nil {
@@ -126,6 +168,9 @@ func ExecuteCommand(cmd *Command, cs *models.CollectionStore, ts *models.Transac
 		}
 		return jsonString
 	case "SHOW":
+		if !cc.ClientState.IsAuthenticated && kv.Config.ProtectedMode {
+			return "unauthorized"
+		}
 		collectionName := cmd.CollectionName
 		result := cs.GetAllKeyValuesInCollection(collectionName)
 		jsonString, err := utils.MapToJSON(result)
@@ -134,6 +179,9 @@ func ExecuteCommand(cmd *Command, cs *models.CollectionStore, ts *models.Transac
 		}
 		return jsonString
 	case "DELETE":
+		if !cc.ClientState.IsAuthenticated && kv.Config.ProtectedMode {
+			return "unauthorized"
+		}
 		if len(cmd.Args) < 1 {
 			return "Usage: DELETE <collection> <key>"
 		}

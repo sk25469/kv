@@ -14,4 +14,5 @@ const (
 	CLEANUP_DURATION = time.Duration(1 * time.Minute)
 	TRANSACTIONAL    = "transactional"
 	ACTIVE           = "active"
+	CONFIG_FILE      = "kv.conf"
 )

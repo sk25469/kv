@@ -11,15 +11,15 @@ import (
 )
 
 // Start initializes the server
-func Start() {
+func Start(config *models.Config) {
 	// Start TCP server
-	listener, err := net.Listen("tcp", ":7000")
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%v", config.Port))
 	if err != nil {
 		log.Println("Error starting server:", err)
 		return
 	}
 	defer listener.Close()
-	log.Println("Server is listening on port 7000...")
+	log.Printf("Server is listening on port %v...\n", config.Port)
 
 	log.Printf("creating the collection store")
 	cs := models.NewCollectionStore()
@@ -34,7 +34,7 @@ func Start() {
 	StartKVCleanup(cs, utils.CLEANUP_DURATION)
 
 	// Accept client connections
-	kvServer := models.NewKVServer()
+	kvServer := models.NewKVServer(config)
 
 	for {
 		conn, err := listener.Accept()
@@ -84,7 +84,7 @@ func handleConnection(conn net.Conn, cs *models.CollectionStore, kvServer *model
 				log.Printf("error writing operation to dump")
 			}
 		}
-		result := ExecuteCommand(cmd, cs, ts, clientConfig)
+		result := ExecuteCommand(cmd, cs, ts, clientConfig, kvServer)
 		log.Printf("result for cmd: %v -------- %v", cmd, result)
 		bytesWritten, err := fmt.Fprintln(conn, result)
 		if err != nil {
@@ -102,7 +102,7 @@ func handleInitLoad(cs *models.CollectionStore) error {
 	}
 	for _, cmd := range cmds {
 		if ShouldWriteLog(cmd) {
-			result := ExecuteCommand(&cmd, cs, nil, nil)
+			result := ExecuteCommand(&cmd, cs, nil, &models.ClientConfig{ClientState: &models.ClientState{State: utils.ACTIVE, IsAuthenticated: true}}, &models.KVServer{Config: &models.Config{ProtectedMode: false}})
 			log.Printf("successfully executed curr cmd: %v ------------ %v", cmd, result)
 		}
 	}
