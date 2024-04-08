@@ -50,14 +50,20 @@ func ExecuteCommand(cmd *Command, cs *models.CollectionStore, ts *models.Transac
 	switch cmd.Name {
 	case "BEGIN":
 		ts.BeginTransaction()
+		cc.ClientState.State = utils.TRANSACTIONAL
 		return "OK"
 	case "COMMIT":
 		ts.ExecTransaction()
+		cc.ClientState.State = utils.ACTIVE
 		return "OK"
 	case "ROLLBACK":
 		ts.RollbackTransaction()
+		cc.ClientState.State = utils.ACTIVE
 		return "OK"
 	case "TSET":
+		if cc.ClientState.State != utils.TRANSACTIONAL {
+			return "ERROR: Transaction not started"
+		}
 		if len(cmd.Args) < 2 {
 			return "Usage: TSET <collection_name> <key> <value>"
 		}
@@ -67,6 +73,9 @@ func ExecuteCommand(cmd *Command, cs *models.CollectionStore, ts *models.Transac
 		ts.Set(collectionName, key, value)
 		return "OK"
 	case "TGET":
+		if cc.ClientState.State != utils.TRANSACTIONAL {
+			return "ERROR: Transaction not started"
+		}
 		if len(cmd.Args) < 1 {
 			return "Usage: TSET <collection_name> <key> <value>"
 		}

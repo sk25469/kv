@@ -37,6 +37,7 @@ func (s *KVServer) HandleClientConnect(clientID, ipAddress string) {
 		ClientID:    clientID,
 		IPAddress:   ipAddress,
 		ConnectTime: time.Now(),
+		ClientState: NewClientState(),
 	}
 
 	s.clients[clientID] = config
