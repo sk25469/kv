@@ -2,6 +2,7 @@ package server
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -22,9 +23,11 @@ func Start(config *models.Config, readySignal chan<- bool) {
 	defer listener.Close()
 	log.Printf("Server is listening on port %v...\n", config.Port)
 
-	log.Printf("creating the collection store")
+	log.Printf("creating all the stores for the server: %v", config.Port)
 	cs := models.NewCollectionStore()
 	ps := models.NewPubSub()
+	ts := models.NewTransactionalKeyValueStore()
+	kvServer := models.NewKVServer(config)
 
 	err = handleInitLoad(cs)
 	if err != nil {
@@ -32,11 +35,12 @@ func Start(config *models.Config, readySignal chan<- bool) {
 		return
 	}
 
+	go WatchSnapshotAndUpdate(utils.DUMP_FILE_NAME, cs, ts, kvServer, ps)
+
 	log.Printf("starting TTL cleanups")
 	StartKVCleanup(cs, utils.CLEANUP_DURATION)
 
 	// Accept client connections
-	kvServer := models.NewKVServer(config)
 
 	readySignal <- true
 	log.Printf("server ready to accept connections: %v", config.Port)
@@ -48,12 +52,12 @@ func Start(config *models.Config, readySignal chan<- bool) {
 			continue
 		}
 		log.Printf("connected with client: %v", conn)
-		go handleConnection(conn, cs, kvServer, ps)
+		go handleConnection(conn, cs, ts, kvServer, ps)
 	}
 }
 
 // handleConnection handles client connections
-func handleConnection(conn net.Conn, cs *models.CollectionStore, kvServer *models.KVServer, ps *models.PubSub) {
+func handleConnection(conn net.Conn, cs *models.CollectionStore, ts *models.TransactionalKeyValueStore, kvServer *models.KVServer, ps *models.PubSub) {
 
 	reader := bufio.NewReader(conn)
 	remoteAddress := conn.RemoteAddr().String()
@@ -76,7 +80,6 @@ func handleConnection(conn net.Conn, cs *models.CollectionStore, kvServer *model
 	}(clientId)
 
 	// Create a bufio reader to read from the connection
-	ts := models.NewTransactionalKeyValueStore()
 
 	for {
 		// Read the next line from the connection
@@ -153,4 +156,17 @@ func subscribeToTopic(topic string, conn net.Conn, pubSub *models.PubSub, cc *mo
 func publishToTopic(topic, message string, conn net.Conn, pubSub *models.PubSub) {
 	pubSub.Publish(topic, message)
 	conn.Write([]byte("Published message to " + topic + "\n"))
+}
+
+func ReplicateChanges(jsonCmd string, cs *models.CollectionStore, ts *models.TransactionalKeyValueStore, kvServer *models.KVServer, ps *models.PubSub) string {
+	var cmd Command
+	err := json.Unmarshal([]byte(jsonCmd), &cmd)
+	if err != nil {
+		return ""
+	}
+
+	log.Printf("parsed command for replication: %v", cmd)
+	// Execute the command on the slave server
+	result := ExecuteCommand(&cmd, cs, ts, &models.ClientConfig{ClientState: &models.ClientState{State: utils.ACTIVE, IsAuthenticated: true}}, kvServer, ps)
+	return result
 }

@@ -9,3 +9,11 @@
 {"Name":"SET","CollectionName":"c1","Args":["k1","v4"],"Result":""}
 {"Name":"SET","CollectionName":"myCollection","Args":["key1","value1"],"Result":""}
 {"Name":"SET","CollectionName":"c1","Args":["k1","v8"],"Result":""}
+{"Name":"SET","CollectionName":"collection_test","Args":["key1_test","value1_test"],"Result":""}
+{"Name":"SET","CollectionName":"coll1","Args":["key1","test1"],"Result":""}
+{"Name":"SET","CollectionName":"k1","Args":["c1","v1"],"Result":""}
+{"Name":"SET","CollectionName":"collection11","Args":["key11","value23"],"Result":""}
+{"Name":"SET","CollectionName":"collectoin23","Args":["key233","value2323"],"Result":""}
+{"Name":"SET","CollectionName":"collectiontest1","Args":["key12","values23"],"Result":""}
+{"Name":"SET","CollectionName":"collectiontest2","Args":["key2","values2"],"Result":""}
+{"Name":"SET","CollectionName":"C1","Args":["v3","k4"],"Result":""}
