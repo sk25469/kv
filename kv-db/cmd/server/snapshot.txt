@@ -1,0 +1,10 @@
+{"Name":"SET","CollectionName":"col1","Args":["key1","value1"],"Result":""}
+{"Name":"SET","CollectionName":"col2","Args":["key2","value1"],"Result":""}
+{"Name":"SET","CollectionName":"col2","Args":["key1","value23","something"],"Result":""}
+{"Name":"SET","CollectionName":"col1","Args":["key2","excape23"],"Result":""}
+{"Name":"SET","CollectionName":"col2","Args":["key4","something","else"],"Result":""}
+{"Name":"SET-TTL","CollectionName":"col1","Args":["key1","1m"],"Result":""}
+{"Name":"SET","CollectionName":"\"collection1\"","Args":["\"ley1\"","\"value1\""],"Result":""}
+{"Name":"SET","CollectionName":"c1","Args":["k1","v1"],"Result":""}
+{"Name":"SET","CollectionName":"c1","Args":["k1","v4"],"Result":""}
+{"Name":"SET","CollectionName":"myCollection","Args":["key1","value1"],"Result":""}

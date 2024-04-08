@@ -86,11 +86,6 @@ func LoadConfig(filename string) (*Config, error) {
 		return nil, err
 	}
 
-	// log.Printf("slaves: %v", config.Slaves)
-	// for _, slave := range config.Slaves {
-	// 	log.Printf("slave: %v", slave)
-	// }
-
 	return config, nil
 }
 

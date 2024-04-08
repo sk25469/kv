@@ -12,7 +12,7 @@ import (
 )
 
 // Start initializes the server
-func Start(config *models.Config) {
+func Start(config *models.Config, readySignal chan<- bool) {
 	// Start TCP server
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%v", config.Port))
 	if err != nil {
@@ -37,6 +37,8 @@ func Start(config *models.Config) {
 
 	// Accept client connections
 	kvServer := models.NewKVServer(config)
+
+	readySignal <- true
 
 	for {
 		conn, err := listener.Accept()
