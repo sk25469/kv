@@ -28,6 +28,13 @@ func main() {
 		fmt.Println("Set response:", response)
 	}
 
+	response, err := client.StartPubSub()
+	if err != nil {
+		log.Printf("error starting pub sub")
+		return
+	}
+	log.Printf("%v", response)
+
 	messages, err := client.Subscribe("myTopic")
 	if err != nil {
 		log.Fatalf("Failed to subscribe: %v", err)

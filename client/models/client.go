@@ -5,7 +5,6 @@ package models
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"net"
 )
 
@@ -75,6 +74,10 @@ func (c *KVClient) SetTTL(collectionName, key, ttl string) (string, error) {
 	return c.sendCommand(fmt.Sprintf("SET-TTL %s %s %s", collectionName, key, ttl))
 }
 
+func (c *KVClient) StartPubSub() (string, error) {
+	return c.sendCommand("PUBSUB_MODE")
+}
+
 // Pub-Sub related methods
 func (c *KVClient) Subscribe(topic string) (<-chan string, error) {
 	// Send subscribe command to server
@@ -95,7 +98,6 @@ func (c *KVClient) Subscribe(topic string) (<-chan string, error) {
 				return
 			}
 			messages <- response
-			log.Printf("incoming message: %v", response)
 		}
 	}()
 
