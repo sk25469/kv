@@ -48,6 +48,7 @@ func main() {
 			fmt.Println("Protected mode:", slaveConfig.ProtectedMode)
 			server.Start(slaveConfig, slaveReady)
 		}(slave)
+		<-slaveReady
 	}
 
 	// Use an infinite loop or a more sophisticated method to keep the main goroutine alive

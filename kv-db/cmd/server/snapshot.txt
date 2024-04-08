@@ -8,3 +8,4 @@
 {"Name":"SET","CollectionName":"c1","Args":["k1","v1"],"Result":""}
 {"Name":"SET","CollectionName":"c1","Args":["k1","v4"],"Result":""}
 {"Name":"SET","CollectionName":"myCollection","Args":["key1","value1"],"Result":""}
+{"Name":"SET","CollectionName":"c1","Args":["k1","v8"],"Result":""}

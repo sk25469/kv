@@ -39,6 +39,7 @@ func Start(config *models.Config, readySignal chan<- bool) {
 	kvServer := models.NewKVServer(config)
 
 	readySignal <- true
+	log.Printf("server ready to accept connections: %v", config.Port)
 
 	for {
 		conn, err := listener.Accept()
@@ -55,12 +56,15 @@ func Start(config *models.Config, readySignal chan<- bool) {
 func handleConnection(conn net.Conn, cs *models.CollectionStore, kvServer *models.KVServer, ps *models.PubSub) {
 
 	reader := bufio.NewReader(conn)
-	remoteAddress := utils.GetParsedIP(conn.RemoteAddr().String())
-	clientId, err := utils.GenerateBase64ClientID(remoteAddress)
+	remoteAddress := conn.RemoteAddr().String()
+	clientId, err := utils.GenerateBase64ClientID()
 	if err != nil {
 		log.Printf("error generating client id: %v", err)
 		return
 	}
+
+	log.Printf("handling connection: %v for slave %v", remoteAddress, kvServer.Config.Port)
+
 	kvServer.HandleClientConnect(clientId, remoteAddress)
 
 	clientConfig, _ := kvServer.GetClientConfig(clientId)
@@ -81,24 +85,34 @@ func handleConnection(conn net.Conn, cs *models.CollectionStore, kvServer *model
 			fmt.Println("Error reading from connection:", err)
 			return
 		}
-		if strings.TrimSpace(command) == "PUBSUB_MODE" {
+		cmd := strings.TrimSpace(command)
+		pubSubMode := false
+
+		// Check if the connection should switch to Pub/Sub mode
+		if cmd == "PUBSUB_MODE" {
+			pubSubMode = true
+			conn.Write([]byte("Switching to pub/sub mode. Ready for SUBSCRIBE and PUBLISH commands.\n"))
+			continue // Continue to the next iteration to handle Pub/Sub commands
+		}
+
+		if pubSubMode {
 			handlePubSubMode(conn, ps, clientConfig)
-			return // Exit the main command handler
-		}
-		cmd := ParseCommand(command)
-		if ShouldWriteLog(*cmd) {
-			err = WriteCommandsToFile(*cmd, utils.DUMP_FILE_NAME)
-			if err != nil {
-				log.Printf("error writing operation to dump")
+		} else {
+			cmd := ParseCommand(command)
+			if ShouldWriteLog(*cmd) {
+				err = WriteCommandsToFile(*cmd, utils.DUMP_FILE_NAME)
+				if err != nil {
+					log.Printf("error writing operation to dump")
+				}
 			}
+			result := ExecuteCommand(cmd, cs, ts, clientConfig, kvServer, ps)
+			log.Printf("result for cmd: %v -------- %v", cmd, result)
+			bytesWritten, err := fmt.Fprintln(conn, result)
+			if err != nil {
+				log.Printf("error writing to the connection: %v : [%v]", conn, err)
+			}
+			log.Printf("bytes written to conn: %v ----------- %v", conn, bytesWritten)
 		}
-		result := ExecuteCommand(cmd, cs, ts, clientConfig, kvServer, ps)
-		log.Printf("result for cmd: %v -------- %v", cmd, result)
-		bytesWritten, err := fmt.Fprintln(conn, result)
-		if err != nil {
-			log.Printf("error writing to the connection: %v : [%v]", conn, err)
-		}
-		log.Printf("bytes written to conn: %v ----------- %v", conn, bytesWritten)
 	}
 }
 

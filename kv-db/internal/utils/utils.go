@@ -15,7 +15,7 @@ func GetParsedIP(ip string) string {
 }
 
 // GenerateBase64ClientID generates a Base64 client ID based on the client's IP address
-func GenerateBase64ClientID(ipAddress string) (string, error) {
+func GenerateBase64ClientID() (string, error) {
 	// Parse the IP address string
 	// Generate a random UUID
 	uuid := uuid.New()
