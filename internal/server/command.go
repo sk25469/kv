@@ -194,7 +194,7 @@ func ExecuteCommand(cmd *Command, cs *models.CollectionStore, ts *models.Transac
 }
 
 func ShouldWriteLog(cmd Command) bool {
-	if cmd.Name == "SET" || cmd.Name == "DELETE" || cmd.Name == "SET-TTL" {
+	if cmd.Name == utils.SET || cmd.Name == utils.DEL || cmd.Name == utils.SET_TTL || cmd.Name == utils.SUBSCRIBE || cmd.Name == utils.PUBLISH {
 		return true
 	}
 	return false

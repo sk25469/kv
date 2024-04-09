@@ -115,6 +115,13 @@ func handleConnection(conn net.Conn, cs *models.CollectionStore, ts *models.Tran
 		}
 		cmd := ParseCommand(command)
 
+		if ShouldWriteLog(*cmd) {
+			err = WriteCommandsToFile(*cmd, utils.SNAPSHOT_FILE)
+			if err != nil {
+				log.Printf("error writing operation to dump")
+			}
+		}
+
 		switch cmd.Name {
 		case utils.SUBSCRIBE, utils.PUBLISH:
 			handlePubSubMode(cmd, conn, ps, clientConfig)
@@ -125,13 +132,7 @@ func handleConnection(conn net.Conn, cs *models.CollectionStore, ts *models.Tran
 		case utils.PING:
 			handleHealthCommands(conn)
 		default:
-			cmd := ParseCommand(command)
-			if ShouldWriteLog(*cmd) {
-				err = WriteCommandsToFile(*cmd, utils.SNAPSHOT_FILE)
-				if err != nil {
-					log.Printf("error writing operation to dump")
-				}
-			}
+
 			result := ExecuteCommand(cmd, cs, ts, clientConfig, kvServer, ps)
 			log.Printf("result for cmd: %v -------- %v", cmd, result)
 			bytesWritten, err := fmt.Fprintln(conn, result)
@@ -164,18 +165,14 @@ func handlePubSubMode(cmd *Command, conn net.Conn, pubSub *models.PubSub, cc *mo
 	// Inform the client that it has entered pub/sub mode
 	conn.Write([]byte("Entering pub/sub mode. Ready for SUBSCRIBE and PUBLISH commands.\n"))
 
-	log.Printf("handling pubsub mode: %v with config: %v", cmd, cc.ClientID)
-
 	// SUBSCRIBE <topic>
 	// PUBLISH <topic> <message>
 	if strings.Contains(cmd.Name, utils.SUBSCRIBE) {
 		topic := cmd.CollectionName
-		log.Printf("subscribing to topic: %v with config: %v", topic, cc.ClientID)
 		subscribeToTopic(topic, conn, pubSub, cc)
 	} else if strings.Contains(cmd.Name, utils.PUBLISH) {
 		topic := cmd.CollectionName
 		message := strings.Join(cmd.Args[0:], " ")
-		log.Printf("publishing to topic: %v  with message %v with config: %v", cmd.CollectionName, message, cc.ClientID)
 		publishToTopic(topic, message, conn, pubSub)
 	} else {
 		conn.Write([]byte("Unknown command in pub/sub mode.\n"))
