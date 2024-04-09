@@ -2,6 +2,7 @@ package server
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -11,6 +12,12 @@ import (
 
 	models "github.com/sk25469/kv/internal/model"
 	"github.com/sk25469/kv/utils"
+)
+
+var (
+	listeners = make(map[string]net.Listener)
+	contexts  = make(map[string]context.Context)
+	cancels   = make(map[string]context.CancelFunc)
 )
 
 func StartServer(config *models.Config, isMaster bool, readySignal chan<- bool) {
@@ -35,12 +42,17 @@ func StartServer(config *models.Config, isMaster bool, readySignal chan<- bool) 
 
 // Start initializes the server
 func Start(config *models.Config, readySignal chan<- bool, cs *models.CollectionStore, ps *models.PubSub, ts *models.TransactionalKeyValueStore, kvServer *models.KVServer) {
+
+	ctx, cancel := context.WithCancel(context.Background())
+	contexts[config.Port] = ctx
+	cancels[config.Port] = cancel
 	// Start TCP server
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%v", config.Port))
 	if err != nil {
 		log.Println("Error starting server:", err)
 		return
 	}
+	listeners[config.Port] = listener
 	defer listener.Close()
 	log.Printf("Server is listening on port %v...\n", config.Port)
 
@@ -64,8 +76,14 @@ func Start(config *models.Config, readySignal chan<- bool, cs *models.Collection
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			log.Println("Error accepting connection:", err)
-			continue
+			select {
+			case <-ctx.Done():
+				log.Printf("Server on port %v shutting down", config.Port)
+				return // Exit goroutine when context is cancelled
+			default:
+				log.Printf("Error accepting connection: %v", err)
+				continue
+			}
 		}
 		log.Printf("connected with client: %v", conn)
 		go handleConnection(conn, cs, ts, kvServer, ps)
@@ -240,4 +258,14 @@ func handleConfigCommands(conn net.Conn) {
 
 func handleHealthCommands(conn net.Conn) {
 	conn.Write([]byte("PONG\n"))
+}
+
+func ShutdownServer(port string) {
+	if cancel, exists := cancels[port]; exists {
+		cancel() // Cancel the context to signal goroutines to shutdown
+	}
+	if listener, exists := listeners[port]; exists {
+		listener.Close() // Close the listener to stop accepting new connections
+		log.Printf("Listener on port %v closed", port)
+	}
 }

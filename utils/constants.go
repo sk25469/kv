@@ -15,28 +15,30 @@ var (
 )
 
 const (
-	CLEANUP_DURATION   = time.Duration(1 * time.Minute)
-	TRANSACTIONAL      = 0
-	ACTIVE             = 1
-	SNAPSHOT_DIRECTORY = "/home/sahilsarwar/Desktop/open-source/kv/snapshot/"
-	CONF_DIRECTORY     = "/home/sahilsarwar/Desktop/open-source/kv/conf/"
-	PUB_SUB            = 2
-	SUBSCRIBE          = "SUBSCRIBE"
-	PUBLISH            = "PUBLISH"
-	GET                = "GET"
-	SET                = "SET"
-	DEL                = "DELETE"
-	SET_TTL            = "SET-TTL"
-	EXISTS             = "EXISTS"
-	EXPIRE             = "EXPIRE"
-	REPLICATE          = "REPLICATE"
-	SNAPSHOT           = "SNAPSHOT"
-	BEGIN              = "BEGIN"
-	COMMIT             = "COMMIT"
-	ROLLBACK           = "ROLLBACK"
-	SHUTDOWN           = "SHUTDOWN"
-	MAKE_MASTER        = "MAKE_MASTER"
-	MAKE_SLAVE         = "MAKE_SLAVE"
-	CONFIG             = "CONFIG"
-	PING               = "PING"
+	// Define the interval for the health check
+	HEALTH_CHECK_INTERVAL = 5 * time.Second // Check every 30 seconds
+	CLEANUP_DURATION      = time.Duration(1 * time.Minute)
+	TRANSACTIONAL         = 0
+	ACTIVE                = 1
+	SNAPSHOT_DIRECTORY    = "/home/sahilsarwar/Desktop/open-source/kv/snapshot/"
+	CONF_DIRECTORY        = "/home/sahilsarwar/Desktop/open-source/kv/conf/"
+	PUB_SUB               = 2
+	SUBSCRIBE             = "SUBSCRIBE"
+	PUBLISH               = "PUBLISH"
+	GET                   = "GET"
+	SET                   = "SET"
+	DEL                   = "DELETE"
+	SET_TTL               = "SET-TTL"
+	EXISTS                = "EXISTS"
+	EXPIRE                = "EXPIRE"
+	REPLICATE             = "REPLICATE"
+	SNAPSHOT              = "SNAPSHOT"
+	BEGIN                 = "BEGIN"
+	COMMIT                = "COMMIT"
+	ROLLBACK              = "ROLLBACK"
+	SHUTDOWN              = "SHUTDOWN"
+	MAKE_MASTER           = "MAKE_MASTER"
+	MAKE_SLAVE            = "MAKE_SLAVE"
+	CONFIG                = "CONFIG"
+	PING                  = "PING"
 )
