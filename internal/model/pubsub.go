@@ -62,6 +62,7 @@ func (ps *PubSub) Publish(topic, message string) {
 				case ch <- message:
 				default:
 					// Log or handle the fact that a message was not sent.
+					log.Printf("Message not sent to client")
 				}
 			}(ch)
 		}

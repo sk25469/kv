@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	"github.com/sk25469/kv/internal/utils"
+	"github.com/sk25469/kv/utils"
 )
 
 type ClientConfig struct {

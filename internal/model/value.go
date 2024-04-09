@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	"github.com/sk25469/kv/internal/utils"
+	"github.com/sk25469/kv/utils"
 )
 
 // Value represents a key-value pair

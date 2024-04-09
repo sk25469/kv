@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	models "github.com/sk25469/kv/internal/model"
-	"github.com/sk25469/kv/internal/utils"
+	"github.com/sk25469/kv/utils"
 )
 
 // Command represents a client command
@@ -144,7 +144,6 @@ func ExecuteCommand(cmd *Command, cs *models.CollectionStore, ts *models.Transac
 		key := cmd.Args[0]
 		collectionName := cmd.CollectionName
 		value := strings.Join(cmd.Args[1:], " ")
-		log.Printf("value is %v", value)
 		cs.SetKeyInCollection(collectionName, key, value)
 		return "OK"
 	case "GET":
@@ -195,7 +194,7 @@ func ExecuteCommand(cmd *Command, cs *models.CollectionStore, ts *models.Transac
 }
 
 func ShouldWriteLog(cmd Command) bool {
-	if cmd.Name == "SET" || cmd.Name == "DELETE" || cmd.Name == "SET-TTL" {
+	if cmd.Name == utils.SET || cmd.Name == utils.DEL || cmd.Name == utils.SET_TTL || cmd.Name == utils.SUBSCRIBE || cmd.Name == utils.PUBLISH {
 		return true
 	}
 	return false

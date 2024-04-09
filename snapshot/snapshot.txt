@@ -17,3 +17,4 @@
 {"Name":"SET","CollectionName":"collectiontest1","Args":["key12","values23"],"Result":""}
 {"Name":"SET","CollectionName":"collectiontest2","Args":["key2","values2"],"Result":""}
 {"Name":"SET","CollectionName":"C1","Args":["v3","k4"],"Result":""}
+{"Name":"SET","CollectionName":"C3","Args":["K4","GSF"],"Result":""}
