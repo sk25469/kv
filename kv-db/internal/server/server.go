@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"strings"
 
 	models "github.com/sk25469/kv/internal/model"
@@ -57,6 +58,15 @@ func Start(config *models.Config, readySignal chan<- bool) {
 }
 
 // handleConnection handles client connections
+// / there can be 10 types of commands:
+// 1. Normal commands: GET, SET, DEL, etc.
+// 2. Pub/Sub commands: SUBSCRIBE, PUBLISH
+// 3. Replication commands: REPLICATE = create a new slave with a configuration
+// 4. Snapshot commands: SNAPSHOT = create a snapshot of the current state
+// 5. Transaction commands: BEGIN, COMMIT, ROLLBACK
+// 6. Admin commands: SHUTDOWN, MAKE_MASTER, MAKE_SLAVE
+// 7. Config commands: CONFIG = get or set configuration
+// 8. Health commands: PING
 func handleConnection(conn net.Conn, cs *models.CollectionStore, ts *models.TransactionalKeyValueStore, kvServer *models.KVServer, ps *models.PubSub) {
 
 	reader := bufio.NewReader(conn)
@@ -90,9 +100,16 @@ func handleConnection(conn net.Conn, cs *models.CollectionStore, ts *models.Tran
 		}
 		cmd := ParseCommand(command)
 
-		if utils.ContainsPubSub(cmd.Name) {
+		switch cmd.Name {
+		case utils.SUBSCRIBE, utils.PUBLISH:
 			handlePubSubMode(cmd, conn, ps, clientConfig)
-		} else {
+		case utils.SHUTDOWN, utils.MAKE_MASTER, utils.MAKE_SLAVE:
+			handleAdminCommands(conn, kvServer, cmd)
+		case utils.CONFIG:
+			handleConfigCommands(conn)
+		case utils.PING:
+			handleHealthCommands(conn)
+		default:
 			cmd := ParseCommand(command)
 			if ShouldWriteLog(*cmd) {
 				err = WriteCommandsToFile(*cmd, utils.DUMP_FILE_NAME)
@@ -107,6 +124,7 @@ func handleConnection(conn net.Conn, cs *models.CollectionStore, ts *models.Tran
 				log.Printf("error writing to the connection: %v : [%v]", conn, err)
 			}
 			log.Printf("bytes written to conn: %v ----------- %v", conn, bytesWritten)
+
 		}
 	}
 }
@@ -135,10 +153,10 @@ func handlePubSubMode(cmd *Command, conn net.Conn, pubSub *models.PubSub, cc *mo
 
 	// SUBSCRIBE <topic>
 	// PUBLISH <topic> <message>
-	if strings.Contains(cmd.Name, "SUBSCRIBE") {
+	if strings.Contains(cmd.Name, utils.SUBSCRIBE) {
 		topic := cmd.CollectionName
 		subscribeToTopic(topic, conn, pubSub, cc)
-	} else if strings.Contains(cmd.Name, "PUBLISH") {
+	} else if strings.Contains(cmd.Name, utils.PUBLISH) {
 		topic := cmd.CollectionName
 		message := strings.Join(cmd.Args[0:], " ")
 		publishToTopic(topic, message, conn, pubSub)
@@ -169,4 +187,43 @@ func ReplicateChanges(jsonCmd string, cs *models.CollectionStore, ts *models.Tra
 	// Execute the command on the slave server
 	result := ExecuteCommand(&cmd, cs, ts, &models.ClientConfig{ClientState: &models.ClientState{State: utils.ACTIVE, IsAuthenticated: true}}, kvServer, ps)
 	return result
+}
+
+func handleAdminCommands(conn net.Conn, kvServer *models.KVServer, cmd *Command) {
+	switch cmd.Name {
+	case utils.SHUTDOWN:
+		conn.Write([]byte("Shutting down server...\n"))
+		// Shutdown the server
+		os.Exit(0)
+	case utils.MAKE_MASTER:
+		conn.Write([]byte("Making server master...\n"))
+		// Make the server a master
+		if !kvServer.Config.IsMaster {
+			kvServer.Config.IsMaster = true
+		} else {
+			conn.Write([]byte("Server is already a master.\n"))
+		}
+	case utils.MAKE_SLAVE:
+		conn.Write([]byte("Making server slave...\n"))
+
+		if kvServer.Config.IsMaster {
+			// Make the server a slave
+			kvServer.Config.IsMaster = false
+		} else {
+			conn.Write([]byte("Server is already a slave.\n"))
+		}
+
+	default:
+		conn.Write([]byte("Unknown admin command.\n"))
+	}
+
+}
+
+// TODO: Implement this function
+func handleConfigCommands(conn net.Conn) {
+
+}
+
+func handleHealthCommands(conn net.Conn) {
+	conn.Write([]byte("PONG\n"))
 }

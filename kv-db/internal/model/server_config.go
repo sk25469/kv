@@ -15,6 +15,7 @@ type Config struct {
 	Username       string
 	password       string
 	ProtectedMode  bool
+	IsMaster       bool
 	Slaves         []*Config
 }
 
@@ -25,6 +26,7 @@ func NewConfig(ip, port, username, password string) *Config {
 		MaxConnections: 10,
 		Username:       username,
 		password:       password,
+		IsMaster:       false,
 		ProtectedMode:  false,
 		Slaves:         []*Config{},
 	}
