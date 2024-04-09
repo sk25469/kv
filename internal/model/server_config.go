@@ -16,7 +16,6 @@ type Config struct {
 	password       string
 	ProtectedMode  bool
 	IsMaster       bool
-	Slaves         []*Config
 }
 
 func NewConfig(ip, port, username, password string) *Config {
@@ -28,7 +27,6 @@ func NewConfig(ip, port, username, password string) *Config {
 		password:       password,
 		IsMaster:       false,
 		ProtectedMode:  false,
-		Slaves:         []*Config{},
 	}
 }
 
@@ -60,12 +58,6 @@ func LoadConfig(filename string) (*Config, error) {
 		switch key {
 		case "ip":
 			config.IP = value
-		case "slave:port":
-			slave_port_list := strings.Split(value, ",")
-			log.Printf("slave_port_list: %v", slave_port_list)
-			for _, slave_port := range slave_port_list {
-				config.Slaves = append(config.Slaves, NewConfig(config.IP, slave_port, config.Username, config.GetPassword()))
-			}
 		case "protected-mode":
 			config.ProtectedMode = false
 		case "port":

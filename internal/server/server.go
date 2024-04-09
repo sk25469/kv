@@ -10,11 +10,31 @@ import (
 	"strings"
 
 	models "github.com/sk25469/kv/internal/model"
-	"github.com/sk25469/kv/internal/utils"
+	"github.com/sk25469/kv/utils"
 )
 
+func StartServer(config *models.Config, isMaster bool, readySignal chan<- bool) {
+	fmt.Println("Starting Key-Value Store Server...")
+
+	fmt.Printf("Loading configuration from file: %v\n", config)
+
+	fmt.Println("Port:", config.Port)
+	fmt.Println("Max Connections:", config.MaxConnections)
+	fmt.Println("Username:", config.Username)
+	fmt.Println("Password:", config.GetPassword())
+	fmt.Println("Protected mode:", config.ProtectedMode)
+
+	log.Printf("creating all the stores for the server: %v", config.Port)
+	cs := models.NewCollectionStore()
+	ps := models.NewPubSub()
+	ts := models.NewTransactionalKeyValueStore()
+	kvServer := models.NewKVServer(config)
+
+	Start(config, readySignal, cs, ps, ts, kvServer)
+}
+
 // Start initializes the server
-func Start(config *models.Config, readySignal chan<- bool) {
+func Start(config *models.Config, readySignal chan<- bool, cs *models.CollectionStore, ps *models.PubSub, ts *models.TransactionalKeyValueStore, kvServer *models.KVServer) {
 	// Start TCP server
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%v", config.Port))
 	if err != nil {
@@ -24,27 +44,22 @@ func Start(config *models.Config, readySignal chan<- bool) {
 	defer listener.Close()
 	log.Printf("Server is listening on port %v...\n", config.Port)
 
-	log.Printf("creating all the stores for the server: %v", config.Port)
-	cs := models.NewCollectionStore()
-	ps := models.NewPubSub()
-	ts := models.NewTransactionalKeyValueStore()
-	kvServer := models.NewKVServer(config)
-
 	err = handleInitLoad(cs)
 	if err != nil {
 		log.Printf("error loading dump: %v", err)
 		return
 	}
 
-	go WatchSnapshotAndUpdate(utils.DUMP_FILE_NAME, cs, ts, kvServer, ps)
+	go WatchSnapshotAndUpdate(utils.SNAPSHOT_FILE, cs, ts, kvServer, ps)
 
 	log.Printf("starting TTL cleanups")
 	StartKVCleanup(cs, utils.CLEANUP_DURATION)
 
 	// Accept client connections
 
-	readySignal <- true
 	log.Printf("server ready to accept connections: %v", config.Port)
+
+	readySignal <- true
 
 	for {
 		conn, err := listener.Accept()
@@ -112,7 +127,7 @@ func handleConnection(conn net.Conn, cs *models.CollectionStore, ts *models.Tran
 		default:
 			cmd := ParseCommand(command)
 			if ShouldWriteLog(*cmd) {
-				err = WriteCommandsToFile(*cmd, utils.DUMP_FILE_NAME)
+				err = WriteCommandsToFile(*cmd, utils.SNAPSHOT_FILE)
 				if err != nil {
 					log.Printf("error writing operation to dump")
 				}
@@ -130,15 +145,15 @@ func handleConnection(conn net.Conn, cs *models.CollectionStore, ts *models.Tran
 }
 
 func handleInitLoad(cs *models.CollectionStore) error {
-	cmds, err := ReadCommandsFromFile(utils.DUMP_FILE_NAME)
+	cmds, err := ReadCommandsFromFile(utils.SNAPSHOT_FILE)
 	if err != nil {
 		log.Printf("error reading cmds from file: [%v]", err)
 		return err
 	}
 	for _, cmd := range cmds {
 		if ShouldWriteLog(cmd) {
-			result := ExecuteCommand(&cmd, cs, nil, &models.ClientConfig{ClientState: &models.ClientState{State: utils.ACTIVE, IsAuthenticated: true}}, &models.KVServer{Config: &models.Config{ProtectedMode: false}}, nil)
-			log.Printf("successfully executed curr cmd: %v ------------ %v", cmd, result)
+			_ = ExecuteCommand(&cmd, cs, nil, &models.ClientConfig{ClientState: &models.ClientState{State: utils.ACTIVE, IsAuthenticated: true}}, &models.KVServer{Config: &models.Config{ProtectedMode: false}}, nil)
+			// log.Printf("successfully executed curr cmd: %v ------------ %v", cmd, result)
 		}
 	}
 	return nil
@@ -149,16 +164,18 @@ func handlePubSubMode(cmd *Command, conn net.Conn, pubSub *models.PubSub, cc *mo
 	// Inform the client that it has entered pub/sub mode
 	conn.Write([]byte("Entering pub/sub mode. Ready for SUBSCRIBE and PUBLISH commands.\n"))
 
-	log.Printf("handling pubsub mode: %v", cmd)
+	log.Printf("handling pubsub mode: %v with config: %v", cmd, cc.ClientID)
 
 	// SUBSCRIBE <topic>
 	// PUBLISH <topic> <message>
 	if strings.Contains(cmd.Name, utils.SUBSCRIBE) {
 		topic := cmd.CollectionName
+		log.Printf("subscribing to topic: %v with config: %v", topic, cc.ClientID)
 		subscribeToTopic(topic, conn, pubSub, cc)
 	} else if strings.Contains(cmd.Name, utils.PUBLISH) {
 		topic := cmd.CollectionName
 		message := strings.Join(cmd.Args[0:], " ")
+		log.Printf("publishing to topic: %v  with message %v with config: %v", cmd.CollectionName, message, cc.ClientID)
 		publishToTopic(topic, message, conn, pubSub)
 	} else {
 		conn.Write([]byte("Unknown command in pub/sub mode.\n"))

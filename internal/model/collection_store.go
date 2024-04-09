@@ -51,7 +51,7 @@ func (cs *CollectionStore) SetKeyInCollection(collectionName, key, value string)
 	coll, ok := cs.collections[collectionName]
 	if !ok {
 		// Create a new collection if it doesn't exist
-		log.Printf("collection with %v doesn't exist, creating...", collectionName)
+		// log.Printf("collection with %v doesn't exist, creating...", collectionName)
 		coll = NewKeyValueStore()
 		cs.collections[collectionName] = coll
 	}

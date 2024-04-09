@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	models "github.com/sk25469/kv/internal/model"
-	"github.com/sk25469/kv/internal/utils"
+	"github.com/sk25469/kv/utils"
 )
 
 // Command represents a client command
@@ -144,7 +144,6 @@ func ExecuteCommand(cmd *Command, cs *models.CollectionStore, ts *models.Transac
 		key := cmd.Args[0]
 		collectionName := cmd.CollectionName
 		value := strings.Join(cmd.Args[1:], " ")
-		log.Printf("value is %v", value)
 		cs.SetKeyInCollection(collectionName, key, value)
 		return "OK"
 	case "GET":
