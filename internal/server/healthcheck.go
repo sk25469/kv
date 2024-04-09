@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"strings"
+	"sync"
 	"time"
 
 	models "github.com/sk25469/kv/internal/model"
@@ -47,6 +48,8 @@ func sendPing(address string) bool {
 
 // checkServerHealth checks the health of all servers and takes appropriate actions
 func checkServerHealth(dbState *models.DbState) {
+	var wg sync.WaitGroup
+
 	masterConfig := dbState.GetMaster()
 	// Check master server health
 	if !sendPing(masterConfig.Port) {
@@ -60,9 +63,14 @@ func checkServerHealth(dbState *models.DbState) {
 	for _, config := range dbState.State {
 		if !config.IsMaster && !sendPing(config.Port) {
 			// Handle slave failure
-			log.Printf("Slave server at %s is down. Creating a new slave...\n", config.IP)
+			log.Printf("Slave server at %s:%s is down. Creating a new slave...\n", config.IP, config.Port)
+			dbState.RemoveFailedDb(config)
 			// Code to create a new slave goes here
-			CreateNewSlave(dbState)
+
+			slaveStarted := make(chan bool)
+			wg.Add(1)
+			go CreateNewSlave(dbState, config, slaveStarted, &wg)
+			<-slaveStarted
 		}
 	}
 	log.Printf("everything working fine")
@@ -80,7 +88,8 @@ func promoteSlaveToMaster(dbState *models.DbState) {
 	}
 }
 
-// TODO: Implement this function
-func CreateNewSlave(dbState *models.DbState) {
-
+func CreateNewSlave(dbStates *models.DbState, slaveConfig *models.Config, slaveStarted chan bool, wg *sync.WaitGroup) {
+	defer wg.Done()
+	dbStates.InsertDb(slaveConfig)
+	StartServer(slaveConfig, false, slaveStarted)
 }

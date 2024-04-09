@@ -10,6 +10,11 @@ import (
 	"github.com/google/uuid"
 )
 
+// a random no. between 1 and 100
+func GetShardID() int {
+	return 1 + (int(time.Now().Unix()) % 100)
+}
+
 func ContainsPubSub(cmd string) bool {
 	return strings.Contains(cmd, "SUBSCRIBE") || strings.Contains(cmd, "PUBLISH")
 }
