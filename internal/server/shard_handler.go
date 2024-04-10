@@ -11,18 +11,20 @@ import (
 	"github.com/sk25469/kv/utils"
 )
 
-func StartShard(wg *sync.WaitGroup, shard *models.Shard, shardReady chan bool, shardList *models.ShardsList) {
+func StartShard(wg *sync.WaitGroup, shard *models.Shard, shardReady chan bool, shardList *models.ShardsList, shardConfigDb *models.ShardDbConfig) {
 
 	defer wg.Done()
 	shardID := utils.GetShardID()
-	log.Printf("Starting shard with ID: %v\n", shard.ShardID)
+	log.Printf("Starting shard with ID: %v\n", shardID)
 
 	dbStates := models.NewDbState()
 	shard.ShardID = shardID
 
+	shardConfigDb.ShardID = shardID
+
 	// Configuration files for master and slaves
-	masterConfigFile := utils.MASTER_CONFIG_FILE
-	slaveConfigFiles := []string{utils.SLAVE_1_CONFIG, utils.SLAVE_2_CONFIG, utils.SLAVE_3_CONFIG}
+	masterConfigFile := shardConfigDb.GetShardMasterPath()
+	slaveConfigFiles := shardConfigDb.GetShardSlavesPathList()
 
 	// Load master configuration
 	masterConfig, err := models.LoadConfig(masterConfigFile)
@@ -42,7 +44,7 @@ func StartShard(wg *sync.WaitGroup, shard *models.Shard, shardReady chan bool, s
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		StartServer(masterConfig, true, masterStarted)
+		StartServer(masterConfig, true, masterStarted, shardConfigDb, shard)
 	}()
 
 	<-masterStarted
@@ -59,7 +61,7 @@ func StartShard(wg *sync.WaitGroup, shard *models.Shard, shardReady chan bool, s
 		}
 		wg.Add(1)
 
-		go CreateNewSlave(dbStates, slaveConfig, slaveStarted, wg)
+		go CreateNewSlave(dbStates, slaveConfig, slaveStarted, wg, shardConfigDb, shard)
 		<-slaveStarted
 		shard.AddNode(slaveConfig)
 		fmt.Printf("Slave server started with config: %s\n", configFile)
@@ -77,17 +79,17 @@ func StartShard(wg *sync.WaitGroup, shard *models.Shard, shardReady chan bool, s
 	go func() {
 		defer wg.Done()
 		for {
-			log.Printf("printing db state")
+			log.Printf("printing db state for current shard: %v\n", shardConfigDb.ShardID)
 			dbStates.PrintDbState()
-			time.Sleep(1 * time.Minute)
+			time.Sleep(30 * time.Second)
 		}
 	}()
 
 	// Periodically check server health
-	go StartHealthCheck(dbStates, ticker)
+	go StartHealthCheck(dbStates, ticker, shardConfigDb, shard)
 
 	time.Sleep(10 * time.Second)
-	ShutdownServer("7000")
+	ShutdownServer("8001")
 
 	wg.Wait()
 }

@@ -12,11 +12,11 @@ import (
 	models "github.com/sk25469/kv/internal/model"
 )
 
-func StartHealthCheck(dbState *models.DbState, ticker *time.Ticker) {
+func StartHealthCheck(dbState *models.DbState, ticker *time.Ticker, shardConfigDB *models.ShardDbConfig, shard *models.Shard) {
 	for {
 		select {
 		case <-ticker.C:
-			checkServerHealth(dbState)
+			checkServerHealth(dbState, shardConfigDB, shard)
 		}
 	}
 }
@@ -47,7 +47,7 @@ func sendPing(address string) bool {
 }
 
 // checkServerHealth checks the health of all servers and takes appropriate actions
-func checkServerHealth(dbState *models.DbState) {
+func checkServerHealth(dbState *models.DbState, shardConfigDb *models.ShardDbConfig, shard *models.Shard) {
 	var wg sync.WaitGroup
 
 	masterConfig := dbState.GetMaster()
@@ -69,7 +69,7 @@ func checkServerHealth(dbState *models.DbState) {
 
 			slaveStarted := make(chan bool)
 			wg.Add(1)
-			go CreateNewSlave(dbState, config, slaveStarted, &wg)
+			go CreateNewSlave(dbState, config, slaveStarted, &wg, shardConfigDb, shard)
 			<-slaveStarted
 		}
 	}
@@ -88,8 +88,8 @@ func promoteSlaveToMaster(dbState *models.DbState) {
 	}
 }
 
-func CreateNewSlave(dbStates *models.DbState, slaveConfig *models.Config, slaveStarted chan bool, wg *sync.WaitGroup) {
+func CreateNewSlave(dbStates *models.DbState, slaveConfig *models.Config, slaveStarted chan bool, wg *sync.WaitGroup, shardConfigDb *models.ShardDbConfig, shard *models.Shard) {
 	defer wg.Done()
 	dbStates.InsertDb(slaveConfig)
-	StartServer(slaveConfig, false, slaveStarted)
+	StartServer(slaveConfig, false, slaveStarted, shardConfigDb, shard)
 }

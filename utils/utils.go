@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -12,7 +13,11 @@ import (
 
 // a random no. between 1 and 100
 func GetShardID() int {
-	return 1 + (int(time.Now().Unix()) % 100)
+	rand.Seed(time.Now().UnixNano())
+
+	// Generate a random number between 1 and 100
+	randomNumber := rand.Intn(100) + 1
+	return randomNumber
 }
 
 func ContainsPubSub(cmd string) bool {
