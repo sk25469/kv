@@ -2,12 +2,13 @@ package models
 
 import (
 	"fmt"
+	"log"
 )
 
 type Shard struct {
 	// Fields
 	ShardID int
-	Nodes   []*Config
+	Nodes   []*KVServer
 	DbState *DbState
 }
 
@@ -16,10 +17,16 @@ type ShardsList struct {
 	Shards []*Shard
 }
 
-func (shard *Shard) GetNode(ip, port string) *Config {
+func (shard *Shard) PrintActiveConnections() {
+	for _, nodes := range shard.Nodes {
+		log.Printf("current node: %v ------- no. of clients connected: %v\n", nodes.Config.Port, len(nodes.GetClientsMap()))
+	}
+}
+
+func (shard *Shard) GetNode(ip, port string) *KVServer {
 	// Code
 	for _, node := range shard.Nodes {
-		if fmt.Sprintf("%v:%v", ip, port) == fmt.Sprintf("%v:%v", node.IP, node.Port) {
+		if fmt.Sprintf("%v:%v", ip, port) == fmt.Sprintf("%v:%v", node.Config.IP, node.Config.Port) {
 			return node
 		}
 	}
@@ -30,17 +37,17 @@ func (shard *Shard) GetNode(ip, port string) *Config {
 func NewShard(dbState *DbState) *Shard {
 	// Code
 	return &Shard{
-		Nodes:   make([]*Config, 0),
+		Nodes:   make([]*KVServer, 0),
 		DbState: dbState,
 	}
 }
 
-func (shard *Shard) AddNode(node *Config) {
+func (shard *Shard) AddNode(node *KVServer) {
 	// Code
 	shard.Nodes = append(shard.Nodes, node)
 }
 
-func (shard *Shard) RemoveNode(node *Config) {
+func (shard *Shard) RemoveNode(node *KVServer) {
 	// Code
 	for i, n := range shard.Nodes {
 		if n == node {

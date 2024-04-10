@@ -3,6 +3,7 @@ package models
 import (
 	"fmt"
 	"log"
+	"net"
 	"sync"
 	"time"
 
@@ -36,7 +37,7 @@ func NewKVServer(config *Config) *KVServer {
 }
 
 // HandleClientConnect handles a new client connection
-func (s *KVServer) HandleClientConnect(clientID, ipAddress string) {
+func (s *KVServer) HandleClientConnect(clientID, ipAddress string, conn net.Conn) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -45,6 +46,7 @@ func (s *KVServer) HandleClientConnect(clientID, ipAddress string) {
 		IPAddress:   ipAddress,
 		ConnectTime: time.Now(),
 		ClientState: NewClientState(),
+		Connection:  &conn,
 	}
 
 	s.clients[clientID] = config
@@ -53,7 +55,7 @@ func (s *KVServer) HandleClientConnect(clientID, ipAddress string) {
 }
 
 // HandleClientDisconnect handles a client disconnection
-func (s *KVServer) HandleClientDisconnect(clientID string) {
+func (s *KVServer) HandleClientDisconnect(clientID string, conn *net.Conn) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -61,6 +63,13 @@ func (s *KVServer) HandleClientDisconnect(clientID string) {
 		delete(s.clients, clientID)
 		fmt.Printf("Client disconnected: ID=%s\n", clientID)
 	}
+}
+
+func (s *KVServer) GetClientsMap() map[string]*ClientConfig {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return s.clients
 }
 
 // GetClientConfig retrieves the configuration details of a client

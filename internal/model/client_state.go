@@ -1,6 +1,7 @@
 package models
 
 import (
+	"net"
 	"time"
 
 	"github.com/sk25469/kv/utils"
@@ -11,6 +12,7 @@ type ClientConfig struct {
 	IPAddress   string
 	ConnectTime time.Time
 	ClientState *ClientState
+	Connection  *net.Conn
 }
 
 // state can be 1 of the following:

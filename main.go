@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"sync"
+	"time"
 
 	models "github.com/sk25469/kv/internal/model"
 	"github.com/sk25469/kv/internal/server"
@@ -12,7 +13,6 @@ import (
 
 func main() {
 	shardList := models.NewShardsList()
-	shard := models.NewShard(&models.DbState{})
 
 	// Read the JSON config path
 	log.Print("Reading shard config file...\n")
@@ -30,6 +30,8 @@ func main() {
 	var wg sync.WaitGroup
 
 	for _, shardDbConfig := range shardConfig.ShardList {
+		shard := models.NewShard(&models.DbState{})
+
 		shardStarted := make(chan bool)
 
 		wg.Add(1)
@@ -37,6 +39,9 @@ func main() {
 		<-shardStarted
 		log.Printf("Shard with ID %v started\n", shardDbConfig.ShardID)
 	}
+
+	time.Sleep(10 * time.Second)
+	server.ShutdownServer(shardList.Shards[0].Nodes[0])
 
 	wg.Wait()
 }
