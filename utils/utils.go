@@ -3,12 +3,22 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+// a random no. between 1 and 100
+func GetShardID() int {
+	rand.Seed(time.Now().UnixNano())
+
+	// Generate a random number between 1 and 100
+	randomNumber := rand.Intn(100) + 1
+	return randomNumber
+}
 
 func ContainsPubSub(cmd string) bool {
 	return strings.Contains(cmd, "SUBSCRIBE") || strings.Contains(cmd, "PUBLISH")

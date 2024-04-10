@@ -12,11 +12,12 @@ var (
 	SLAVE_2_CONFIG     = CONF_DIRECTORY + "slave2.conf"
 	SLAVE_3_CONFIG     = CONF_DIRECTORY + "slave3.conf"
 	SNAPSHOT_FILE      = SNAPSHOT_DIRECTORY + "snapshot.txt"
+	SHARD_CONFIG_FILE  = CONF_DIRECTORY + "shard-conf.json"
 )
 
 const (
 	// Define the interval for the health check
-	HEALTH_CHECK_INTERVAL = 5 * time.Second // Check every 30 seconds
+	HEALTH_CHECK_INTERVAL = 10 * time.Second
 	CLEANUP_DURATION      = time.Duration(1 * time.Minute)
 	TRANSACTIONAL         = 0
 	ACTIVE                = 1

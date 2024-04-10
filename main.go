@@ -1,11 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"sync"
-	"time"
 
 	models "github.com/sk25469/kv/internal/model"
 	"github.com/sk25469/kv/internal/server"
@@ -13,71 +11,50 @@ import (
 )
 
 func main() {
-	// Configuration files for master and slaves
-	masterConfigFile := utils.MASTER_CONFIG_FILE
-	slaveConfigFiles := []string{utils.SLAVE_1_CONFIG, utils.SLAVE_2_CONFIG, utils.SLAVE_3_CONFIG}
+	shardList := models.NewShardsList()
+	shard := models.NewShard(&models.DbState{})
 
-	// Load master configuration
-	masterConfig, err := models.LoadConfig(masterConfigFile)
+	// Read the JSON config path
+	log.Print("Reading shard config file...\n")
+	jsonData, err := os.ReadFile(utils.SHARD_CONFIG_FILE)
 	if err != nil {
-		fmt.Printf("Error loading master configuration: %v\n", err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 
-	ticker := time.NewTicker(utils.HEALTH_CHECK_INTERVAL)
-	defer ticker.Stop()
+	var shardConfig models.ShardConfig
+	shardConfig.JsonUnmarshal(jsonData)
 
-	var dbStates models.DbState
-	dbStates.InsertDb(masterConfig)
-	dbStates.SetMaster(masterConfig)
+	log.Print("Starting shard...\n")
+	checkSnapshotFileAndCreate(shardConfig)
 
-	// Start master server in a goroutine
-	masterStarted := make(chan bool)
 	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		server.StartServer(masterConfig, true, masterStarted)
-	}()
 
-	<-masterStarted
-	fmt.Println("Master server started")
+	for _, shardDbConfig := range shardConfig.ShardList {
+		shardStarted := make(chan bool)
 
-	// Start slave servers in separate goroutines
-	for _, configFile := range slaveConfigFiles {
-		slaveStarted := make(chan bool)
 		wg.Add(1)
-		go func(confFile string, dbStates *models.DbState) {
-			defer wg.Done()
-			slaveConfig, err := models.LoadConfig(confFile)
-			if err != nil {
-				fmt.Printf("Error loading slave configuration from %s: %v\n", confFile, err)
-				return
-			}
-			dbStates.InsertDb(slaveConfig)
-			server.StartServer(slaveConfig, false, slaveStarted)
-		}(configFile, &dbStates)
-		<-slaveStarted
-		fmt.Printf("Slave server started with config: %s\n", configFile)
+		go server.StartShard(&wg, shard, shardStarted, shardList, shardDbConfig)
+		<-shardStarted
+		log.Printf("Shard with ID %v started\n", shardDbConfig.ShardID)
 	}
 
-	// Wait for all servers to start
-	fmt.Println("All servers are up and running")
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for {
-			log.Printf("printing db state")
-			dbStates.PrintDbState()
-			time.Sleep(1 * time.Minute)
-		}
-	}()
-
-	// Periodically check server health
-	go server.StartHealthCheck(&dbStates, ticker)
-
-	// time.Sleep(10 * time.Second)
-	// server.ShutdownServer("7000")
 	wg.Wait()
+}
+
+func checkSnapshotFileAndCreate(shardConfig models.ShardConfig) error {
+	for _, shard := range shardConfig.ShardList {
+		snapshotPath := shard.SnapshotPath
+		if _, err := os.Stat(snapshotPath); os.IsNotExist(err) {
+			log.Printf("Snapshot file not found at %s. Creating a new snapshot...\n", snapshotPath)
+			// create new snapshotpath.txt file here
+			_, err := os.Create(snapshotPath)
+			if err != nil {
+				log.Printf("error creating snapshot file: %v", err)
+				return err
+			}
+		} else {
+			log.Printf("Snapshot file found at %s\n", snapshotPath)
+		}
+	}
+	return nil
 }

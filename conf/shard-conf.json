@@ -1,0 +1,27 @@
+{
+    "no_of_shards": 2,
+    "shards": [
+        {
+            "snapshot_path":"/home/sahilsarwar/Desktop/open-source/kv/snapshot/snapshot1.txt",
+            "nodes": {
+                "master_conf_path": "/home/sahilsarwar/Desktop/open-source/kv/conf/kv.conf",
+                "slaves_conf_path": [
+                    "/home/sahilsarwar/Desktop/open-source/kv/conf/slave1.conf",
+                    "/home/sahilsarwar/Desktop/open-source/kv/conf/slave2.conf",
+                    "/home/sahilsarwar/Desktop/open-source/kv/conf/slave3.conf"
+                ]
+            }
+        },
+        {
+            "snapshot_path":"/home/sahilsarwar/Desktop/open-source/kv/snapshot/snapshot2.txt",
+            "nodes": {
+                "master_conf_path": "/home/sahilsarwar/Desktop/open-source/kv/conf/kv-1.conf",
+                "slaves_conf_path": [
+                    "/home/sahilsarwar/Desktop/open-source/kv/conf/slave11.conf",
+                    "/home/sahilsarwar/Desktop/open-source/kv/conf/slave21.conf",
+                    "/home/sahilsarwar/Desktop/open-source/kv/conf/slave31.conf"
+                ]
+            }
+        }
+    ]
+}

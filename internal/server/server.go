@@ -20,7 +20,7 @@ var (
 	cancels   = make(map[string]context.CancelFunc)
 )
 
-func StartServer(config *models.Config, isMaster bool, readySignal chan<- bool) {
+func StartServer(config *models.Config, isMaster bool, readySignal chan<- bool, shardConfigDb *models.ShardDbConfig, shard *models.Shard) {
 	fmt.Println("Starting Key-Value Store Server...")
 
 	fmt.Printf("Loading configuration from file: %v\n", config)
@@ -37,11 +37,11 @@ func StartServer(config *models.Config, isMaster bool, readySignal chan<- bool) 
 	ts := models.NewTransactionalKeyValueStore()
 	kvServer := models.NewKVServer(config)
 
-	Start(config, readySignal, cs, ps, ts, kvServer)
+	Start(config, readySignal, cs, ps, ts, kvServer, shardConfigDb, shard)
 }
 
 // Start initializes the server
-func Start(config *models.Config, readySignal chan<- bool, cs *models.CollectionStore, ps *models.PubSub, ts *models.TransactionalKeyValueStore, kvServer *models.KVServer) {
+func Start(config *models.Config, readySignal chan<- bool, cs *models.CollectionStore, ps *models.PubSub, ts *models.TransactionalKeyValueStore, kvServer *models.KVServer, shardConfigDb *models.ShardDbConfig, shard *models.Shard) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	contexts[config.Port] = ctx
@@ -56,13 +56,14 @@ func Start(config *models.Config, readySignal chan<- bool, cs *models.Collection
 	defer listener.Close()
 	log.Printf("Server is listening on port %v...\n", config.Port)
 
-	err = handleInitLoad(cs)
+	err = handleInitLoad(cs, shardConfigDb, shard)
 	if err != nil {
 		log.Printf("error loading dump: %v", err)
 		return
 	}
 
-	go WatchSnapshotAndUpdate(utils.SNAPSHOT_FILE, cs, ts, kvServer, ps)
+	snapshotPath := shardConfigDb.GetSnapshotPath()
+	go WatchSnapshotAndUpdate(snapshotPath, cs, ts, kvServer, ps)
 
 	log.Printf("starting TTL cleanups")
 	StartKVCleanup(cs, utils.CLEANUP_DURATION)
@@ -86,7 +87,7 @@ func Start(config *models.Config, readySignal chan<- bool, cs *models.Collection
 			}
 		}
 		log.Printf("connected with client: %v", conn)
-		go handleConnection(conn, cs, ts, kvServer, ps)
+		go handleConnection(conn, cs, ts, kvServer, ps, shardConfigDb, shard)
 	}
 }
 
@@ -100,7 +101,7 @@ func Start(config *models.Config, readySignal chan<- bool, cs *models.Collection
 // 6. Admin commands: SHUTDOWN, MAKE_MASTER, MAKE_SLAVE
 // 7. Config commands: CONFIG = get or set configuration
 // 8. Health commands: PING
-func handleConnection(conn net.Conn, cs *models.CollectionStore, ts *models.TransactionalKeyValueStore, kvServer *models.KVServer, ps *models.PubSub) {
+func handleConnection(conn net.Conn, cs *models.CollectionStore, ts *models.TransactionalKeyValueStore, kvServer *models.KVServer, ps *models.PubSub, shardConfigDb *models.ShardDbConfig, shard *models.Shard) {
 
 	reader := bufio.NewReader(conn)
 	remoteAddress := conn.RemoteAddr().String()
@@ -134,7 +135,8 @@ func handleConnection(conn net.Conn, cs *models.CollectionStore, ts *models.Tran
 		cmd := ParseCommand(command)
 
 		if ShouldWriteLog(*cmd) {
-			err = WriteCommandsToFile(*cmd, utils.SNAPSHOT_FILE)
+			snapshotPath := shardConfigDb.GetSnapshotPath()
+			err = WriteCommandsToFile(*cmd, snapshotPath)
 			if err != nil {
 				log.Printf("error writing operation to dump")
 			}
@@ -163,8 +165,9 @@ func handleConnection(conn net.Conn, cs *models.CollectionStore, ts *models.Tran
 	}
 }
 
-func handleInitLoad(cs *models.CollectionStore) error {
-	cmds, err := ReadCommandsFromFile(utils.SNAPSHOT_FILE)
+func handleInitLoad(cs *models.CollectionStore, shardConfig *models.ShardDbConfig, shard *models.Shard) error {
+	snapshotPath := shardConfig.GetSnapshotPath()
+	cmds, err := ReadCommandsFromFile(snapshotPath)
 	if err != nil {
 		log.Printf("error reading cmds from file: [%v]", err)
 		return err

@@ -8,6 +8,12 @@ type DbState struct {
 	State []*Config
 }
 
+func NewDbState() *DbState {
+	return &DbState{
+		State: make([]*Config, 0),
+	}
+}
+
 func (db *DbState) RemoveFailedDb(config *Config) {
 	for i, state := range db.State {
 		if state.Port == config.Port {
