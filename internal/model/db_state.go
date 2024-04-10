@@ -19,6 +19,15 @@ func (db *DbState) PrintConnections() {
 	}
 }
 
+func (db *DbState) GetStateWithConfig(config *Config) *Config {
+	for _, state := range db.State {
+		if state.Port == config.Port {
+			return state
+		}
+	}
+	return &Config{}
+}
+
 func (db *DbState) AddConnection(address string, conn *net.Conn) {
 	db.mu.Lock()
 	defer db.mu.Unlock()

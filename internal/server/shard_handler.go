@@ -81,7 +81,7 @@ func StartShard(wg *sync.WaitGroup, shard *models.Shard, shardReady chan bool, s
 			dbStates.PrintDbState()
 
 			log.Printf("printing connections for current shard: %v\n", shard.ShardID)
-			shard.DbState.PrintConnections()
+			shard.PrintActiveConnections()
 			time.Sleep(30 * time.Second)
 		}
 	}()

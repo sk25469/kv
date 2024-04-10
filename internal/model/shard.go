@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"log"
 )
 
 type Shard struct {
@@ -16,11 +17,17 @@ type ShardsList struct {
 	Shards []*Shard
 }
 
-func (shard *Shard) GetNode(ip, port string) *Config {
+func (shard *Shard) PrintActiveConnections() {
+	for _, nodes := range shard.Nodes {
+		log.Printf("current node: %v ------- no. of clients connected: %v\n", nodes.Config.Port, len(nodes.GetClientsMap()))
+	}
+}
+
+func (shard *Shard) GetNode(ip, port string) *KVServer {
 	// Code
 	for _, node := range shard.Nodes {
 		if fmt.Sprintf("%v:%v", ip, port) == fmt.Sprintf("%v:%v", node.Config.IP, node.Config.Port) {
-			return node.Config
+			return node
 		}
 	}
 	return nil

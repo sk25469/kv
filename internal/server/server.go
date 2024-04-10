@@ -278,8 +278,8 @@ func ShutdownServer(kvServer *models.KVServer) {
 		log.Printf("Listener on port %v closed", port)
 	}
 
-	log.Printf("Shutting down server on port %v", kvServer.Config.Port)
-	for clientId, config := range kvServer.GetClientsMap() {
-		kvServer.HandleClientDisconnect(clientId, config.Connection)
-	}
+	// log.Printf("Shutting down server on port %v", kvServer.Config.Port)
+	// for clientId, config := range kvServer.GetClientsMap() {
+	// 	kvServer.HandleClientDisconnect(clientId, config.Connection)
+	// }
 }

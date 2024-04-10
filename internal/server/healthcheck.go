@@ -55,8 +55,16 @@ func checkServerHealth(dbState *models.DbState, shardConfigDb *models.ShardDbCon
 	if !sendPing(masterConfig.Port) {
 		// Handle master failure
 		log.Println("Master server is down. Promoting a slave to master...")
+
+		// get active connections to current master
+		activeConnectionsMap := shard.GetNode(masterConfig.IP, masterConfig.Port).GetClientsMap()
 		dbState.RemoveFailedDb(masterConfig)
-		promoteSlaveToMaster(dbState)
+		shard.RemoveNode(shard.GetNode(masterConfig.IP, masterConfig.Port))
+		newMasterConfig := promoteSlaveToMaster(dbState)
+		newMasterKvServer := shard.GetNode(newMasterConfig.IP, newMasterConfig.Port)
+
+		// Route active connections to new master
+		routeActiveConnections(activeConnectionsMap, newMasterKvServer)
 	}
 
 	// Check each slave server health
@@ -67,29 +75,47 @@ func checkServerHealth(dbState *models.DbState, shardConfigDb *models.ShardDbCon
 			dbState.RemoveFailedDb(config)
 			// Code to create a new slave goes here
 
+			activeConnectionsMap := shard.GetNode(config.IP, config.Port).GetClientsMap()
+			shard.RemoveNode(shard.GetNode(config.IP, config.Port))
+
 			slaveStarted := make(chan bool)
 			wg.Add(1)
 			go CreateNewSlave(dbState, config, slaveStarted, &wg, shardConfigDb, shard)
 			<-slaveStarted
+
+			routeActiveConnections(activeConnectionsMap, shard.GetNode(config.IP, config.Port))
 		}
 	}
 	log.Printf("everything working fine")
 }
 
+func routeActiveConnections(activeConnectionsMap map[string]*models.ClientConfig, newKvServer *models.KVServer) {
+	log.Printf("Routing active connections to new server: %v", newKvServer.Config.Port)
+	for clientId, clientConfig := range activeConnectionsMap {
+		newKvServer.HandleClientConnect(clientId, clientConfig.IPAddress, *clientConfig.Connection)
+	}
+}
+
 // This function needs to be called periodically, e.g., using a time.Ticker
 
-func promoteSlaveToMaster(dbState *models.DbState) {
+func promoteSlaveToMaster(dbState *models.DbState) *models.Config {
 	// Code to promote a slave to master goes here
 	for _, slaves := range dbState.State {
 		if !slaves.IsMaster {
 			dbState.SetMaster(slaves)
-			return
+			return slaves
 		}
 	}
+	return &models.Config{}
 }
 
 func CreateNewSlave(dbStates *models.DbState, slaveConfig *models.Config, slaveStarted chan bool, wg *sync.WaitGroup, shardConfigDb *models.ShardDbConfig, shard *models.Shard) {
 	defer wg.Done()
 	dbStates.InsertDb(slaveConfig)
 	StartServer(slaveConfig, false, slaveStarted, shardConfigDb, shard)
+}
+
+// TODO: 		Implement the following functions
+func RouteActiveConnectionsToOtherServer() {
+
 }
