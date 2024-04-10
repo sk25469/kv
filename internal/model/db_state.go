@@ -2,15 +2,39 @@ package models
 
 import (
 	"log"
+	"net"
+	"sync"
 )
 
 type DbState struct {
-	State []*Config
+	State       []*Config
+	Connections map[string]*net.Conn
+	mu          sync.Mutex
+}
+
+func (db *DbState) PrintConnections() {
+	for address, conn := range db.Connections {
+		log.Printf("Address: %v  --------- Conn: %v\n", address, conn)
+
+	}
+}
+
+func (db *DbState) AddConnection(address string, conn *net.Conn) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	db.Connections[address] = conn
+}
+
+func (db *DbState) RemoveConnection(address string) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+	delete(db.Connections, address)
 }
 
 func NewDbState() *DbState {
 	return &DbState{
-		State: make([]*Config, 0),
+		State:       make([]*Config, 0),
+		Connections: make(map[string]*net.Conn),
 	}
 }
 

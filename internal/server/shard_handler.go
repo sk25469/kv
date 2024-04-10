@@ -79,8 +79,11 @@ func StartShard(wg *sync.WaitGroup, shard *models.Shard, shardReady chan bool, s
 	go func() {
 		defer wg.Done()
 		for {
-			log.Printf("printing db state for current shard: %v\n", shardConfigDb.ShardID)
+			log.Printf("printing db state for current shard: %v\n", shard.ShardID)
 			dbStates.PrintDbState()
+
+			log.Printf("printing connections for current shard: %v\n", shard.ShardID)
+			shard.DbState.PrintConnections()
 			time.Sleep(30 * time.Second)
 		}
 	}()
@@ -89,7 +92,7 @@ func StartShard(wg *sync.WaitGroup, shard *models.Shard, shardReady chan bool, s
 	go StartHealthCheck(dbStates, ticker, shardConfigDb, shard)
 
 	time.Sleep(10 * time.Second)
-	ShutdownServer("8001")
+	ShutdownServer("7000")
 
 	wg.Wait()
 }

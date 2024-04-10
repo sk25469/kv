@@ -12,7 +12,6 @@ import (
 
 func main() {
 	shardList := models.NewShardsList()
-	shard := models.NewShard(&models.DbState{})
 
 	// Read the JSON config path
 	log.Print("Reading shard config file...\n")
@@ -30,6 +29,8 @@ func main() {
 	var wg sync.WaitGroup
 
 	for _, shardDbConfig := range shardConfig.ShardList {
+		shard := models.NewShard(&models.DbState{})
+
 		shardStarted := make(chan bool)
 
 		wg.Add(1)

@@ -1,2 +1,3 @@
 {"Name":"SET","CollectionName":"c1","Args":["k1","v2"],"Result":""}
 {"Name":"SET","CollectionName":"c1","Args":["k1","v3"],"Result":""}
+{"Name":"SET","CollectionName":"","Args":[],"Result":""}

@@ -86,7 +86,9 @@ func Start(config *models.Config, readySignal chan<- bool, cs *models.Collection
 				continue
 			}
 		}
-		log.Printf("connected with client: %v", conn)
+		log.Printf("adding new connection to shard: %v", shard.ShardID)
+		shard.DbState.AddConnection(conn.RemoteAddr().String(), &conn)
+		log.Printf("connected with client: %v", conn.RemoteAddr().String())
 		go handleConnection(conn, cs, ts, kvServer, ps, shardConfigDb, shard)
 	}
 }
@@ -119,6 +121,7 @@ func handleConnection(conn net.Conn, cs *models.CollectionStore, ts *models.Tran
 
 	// handle client disconnection
 	defer func(clientId string) {
+		shard.DbState.RemoveConnection(conn.RemoteAddr().String())
 		conn.Close()
 		kvServer.HandleClientDisconnect(clientId)
 	}(clientId)
