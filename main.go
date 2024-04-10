@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"sync"
+	"time"
 
 	models "github.com/sk25469/kv/internal/model"
 	"github.com/sk25469/kv/internal/server"
@@ -38,6 +39,9 @@ func main() {
 		<-shardStarted
 		log.Printf("Shard with ID %v started\n", shardDbConfig.ShardID)
 	}
+
+	time.Sleep(10 * time.Second)
+	server.ShutdownServer(shardList.Shards[0].Nodes[0])
 
 	wg.Wait()
 }

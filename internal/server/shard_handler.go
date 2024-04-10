@@ -49,7 +49,6 @@ func StartShard(wg *sync.WaitGroup, shard *models.Shard, shardReady chan bool, s
 
 	<-masterStarted
 	fmt.Println("Master server started")
-	shard.AddNode(masterConfig)
 
 	// Start slave servers in separate goroutines
 	for _, configFile := range slaveConfigFiles {
@@ -63,7 +62,6 @@ func StartShard(wg *sync.WaitGroup, shard *models.Shard, shardReady chan bool, s
 
 		go CreateNewSlave(dbStates, slaveConfig, slaveStarted, wg, shardConfigDb, shard)
 		<-slaveStarted
-		shard.AddNode(slaveConfig)
 		fmt.Printf("Slave server started with config: %s\n", configFile)
 	}
 
@@ -90,9 +88,6 @@ func StartShard(wg *sync.WaitGroup, shard *models.Shard, shardReady chan bool, s
 
 	// Periodically check server health
 	go StartHealthCheck(dbStates, ticker, shardConfigDb, shard)
-
-	time.Sleep(10 * time.Second)
-	ShutdownServer("7000")
 
 	wg.Wait()
 }

@@ -37,6 +37,8 @@ func StartServer(config *models.Config, isMaster bool, readySignal chan<- bool, 
 	ts := models.NewTransactionalKeyValueStore()
 	kvServer := models.NewKVServer(config)
 
+	shard.AddNode(kvServer)
+
 	Start(config, readySignal, cs, ps, ts, kvServer, shardConfigDb, shard)
 }
 
@@ -115,7 +117,7 @@ func handleConnection(conn net.Conn, cs *models.CollectionStore, ts *models.Tran
 
 	log.Printf("handling connection: %v for slave %v", remoteAddress, kvServer.Config.Port)
 
-	kvServer.HandleClientConnect(clientId, remoteAddress)
+	kvServer.HandleClientConnect(clientId, remoteAddress, conn)
 
 	clientConfig, _ := kvServer.GetClientConfig(clientId)
 
@@ -123,7 +125,7 @@ func handleConnection(conn net.Conn, cs *models.CollectionStore, ts *models.Tran
 	defer func(clientId string) {
 		shard.DbState.RemoveConnection(conn.RemoteAddr().String())
 		conn.Close()
-		kvServer.HandleClientDisconnect(clientId)
+		kvServer.HandleClientDisconnect(clientId, &conn)
 	}(clientId)
 
 	// Create a bufio reader to read from the connection
@@ -266,12 +268,18 @@ func handleHealthCommands(conn net.Conn) {
 	conn.Write([]byte("PONG\n"))
 }
 
-func ShutdownServer(port string) {
+func ShutdownServer(kvServer *models.KVServer) {
+	port := kvServer.Config.Port
 	if cancel, exists := cancels[port]; exists {
-		cancel() // Cancel the context to signal goroutines to shutdown
+		cancel() // Signal goroutines to shutdown
 	}
 	if listener, exists := listeners[port]; exists {
-		listener.Close() // Close the listener to stop accepting new connections
+		listener.Close() // Stop accepting new connections
 		log.Printf("Listener on port %v closed", port)
+	}
+
+	log.Printf("Shutting down server on port %v", kvServer.Config.Port)
+	for clientId, config := range kvServer.GetClientsMap() {
+		kvServer.HandleClientDisconnect(clientId, config.Connection)
 	}
 }

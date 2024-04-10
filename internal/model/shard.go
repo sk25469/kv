@@ -7,7 +7,7 @@ import (
 type Shard struct {
 	// Fields
 	ShardID int
-	Nodes   []*Config
+	Nodes   []*KVServer
 	DbState *DbState
 }
 
@@ -19,8 +19,8 @@ type ShardsList struct {
 func (shard *Shard) GetNode(ip, port string) *Config {
 	// Code
 	for _, node := range shard.Nodes {
-		if fmt.Sprintf("%v:%v", ip, port) == fmt.Sprintf("%v:%v", node.IP, node.Port) {
-			return node
+		if fmt.Sprintf("%v:%v", ip, port) == fmt.Sprintf("%v:%v", node.Config.IP, node.Config.Port) {
+			return node.Config
 		}
 	}
 	return nil
@@ -30,17 +30,17 @@ func (shard *Shard) GetNode(ip, port string) *Config {
 func NewShard(dbState *DbState) *Shard {
 	// Code
 	return &Shard{
-		Nodes:   make([]*Config, 0),
+		Nodes:   make([]*KVServer, 0),
 		DbState: dbState,
 	}
 }
 
-func (shard *Shard) AddNode(node *Config) {
+func (shard *Shard) AddNode(node *KVServer) {
 	// Code
 	shard.Nodes = append(shard.Nodes, node)
 }
 
-func (shard *Shard) RemoveNode(node *Config) {
+func (shard *Shard) RemoveNode(node *KVServer) {
 	// Code
 	for i, n := range shard.Nodes {
 		if n == node {
