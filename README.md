@@ -3,6 +3,10 @@
 ## Overview
 This project is a key-value store implemented in Go, designed to provide a robust and scalable solution for storing and retrieving data efficiently. It supports a variety of features including Time to Live (TTL) for keys, transactions, publish-subscribe mechanisms, authentication, configuration file loading, replication, and sharding.
 
+## Architecture
+
+![KV Architecture](https://github.com/sk25469/kv/assets/68475465/53cbefbc-d9bf-4530-a848-d983388f11d5)
+
 
 ## Features
 * **TTL for Keys**: Automatically expire and remove keys after a specified duration.
