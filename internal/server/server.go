@@ -109,11 +109,7 @@ func handleConnection(conn net.Conn, cs *models.CollectionStore, ts *models.Tran
 
 	reader := bufio.NewReader(conn)
 	remoteAddress := conn.RemoteAddr().String()
-	clientId, err := utils.GenerateBase64ClientID()
-	if err != nil {
-		log.Printf("error generating client id: %v", err)
-		return
-	}
+	clientId := utils.GenerateBase64ClientID()
 
 	log.Printf("handling connection: %v for slave %v", remoteAddress, kvServer.Config.Port)
 
@@ -133,18 +129,24 @@ func handleConnection(conn net.Conn, cs *models.CollectionStore, ts *models.Tran
 	for {
 		// Read the next line from the connection
 		command, err := reader.ReadString('\n')
-		if err != nil {
+		log.Printf("parsed command: %v", command)
+		if err != nil || command == "" {
 			fmt.Println("Error reading from connection:", err)
 			return
 		}
 		cmd := ParseCommand(command)
 
-		if ShouldWriteLog(*cmd) {
+		if cmd != nil && ShouldWriteLog(*cmd) {
 			snapshotPath := shardConfigDb.GetSnapshotPath()
 			err = WriteCommandsToFile(*cmd, snapshotPath)
 			if err != nil {
 				log.Printf("error writing operation to dump")
 			}
+		}
+
+		if cmd == nil {
+			log.Printf("no command to parse")
+			return
 		}
 
 		switch cmd.Name {

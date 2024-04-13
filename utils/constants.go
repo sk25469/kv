@@ -16,6 +16,7 @@ var (
 )
 
 const (
+	SERVER_PORT = "4321"
 	// Define the interval for the health check
 	HEALTH_CHECK_INTERVAL = 10 * time.Second
 	CLEANUP_DURATION      = time.Duration(1 * time.Minute)

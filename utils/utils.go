@@ -29,7 +29,7 @@ func GetParsedIP(ip string) string {
 }
 
 // GenerateBase64ClientID generates a Base64 client ID based on the client's IP address
-func GenerateBase64ClientID() (string, error) {
+func GenerateBase64ClientID() string {
 	// Parse the IP address string
 	// Generate a random UUID
 	uuid := uuid.New()
@@ -37,7 +37,7 @@ func GenerateBase64ClientID() (string, error) {
 	// Convert UUID to string
 	uuidStr := uuid.String()
 
-	return uuidStr, nil
+	return uuidStr
 }
 
 func GetCurrentTime() time.Time {
@@ -77,4 +77,31 @@ func ParseDuration(input string) (time.Duration, error) {
 	}
 
 	return duration, nil
+}
+
+func AsciiArt() {
+	art := `          _____               _____          
+         /\    \             /\    \         
+        /::\____\           /::\____\        
+       /:::/    /          /:::/    /        
+      /:::/    /          /:::/    /         
+     /:::/    /          /:::/    /          
+    /:::/____/          /:::/____/           
+   /::::\    \          |::|    |            
+  /::::::\____\________ |::|    |     _____  
+ /:::/\:::::::::::\    \|::|    |    /\    \ 
+/:::/  |:::::::::::\____|::|    |   /::\____\
+\::/   |::|~~~|~~~~~    |::|    |  /:::/    /
+ \/____|::|   |         |::|    | /:::/    / 
+       |::|   |         |::|____|/:::/    /  
+       |::|   |         |:::::::::::/    /   
+       |::|   |         \::::::::::/____/    
+       |::|   |          ~~~~~~~~~~          
+       |::|   |                              
+       \::|   |                              
+        \:|   |                              
+         \|___|                              
+                                             
+			`
+	fmt.Println(art)
 }

@@ -10,7 +10,7 @@ type Node struct {
 }
 
 type ShardDbConfig struct {
-	ShardID      int    `json:"shard_id"`
+	ShardID      string `json:"shard_id"`
 	SnapshotPath string `json:"snapshot_path"`
 	Nodes        *Node  `json:"nodes"`
 }
