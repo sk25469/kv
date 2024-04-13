@@ -1,7 +1,6 @@
 package models
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"sync"
@@ -51,7 +50,7 @@ func (s *KVServer) HandleClientConnect(clientID, ipAddress string, conn net.Conn
 
 	s.clients[clientID] = config
 
-	log.Printf("Client connected: ID=%s, IP=%s\n", clientID, ipAddress)
+	// log.Printf("Client connected: ID=%s, IP=%s\n", clientID, ipAddress)
 }
 
 // HandleClientDisconnect handles a client disconnection
@@ -61,7 +60,7 @@ func (s *KVServer) HandleClientDisconnect(clientID string, conn *net.Conn) {
 
 	if _, ok := s.clients[clientID]; ok {
 		delete(s.clients, clientID)
-		fmt.Printf("Client disconnected: ID=%s\n", clientID)
+		// fmt.Printf("Client disconnected: ID=%s\n", clientID)
 	}
 }
 

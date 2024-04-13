@@ -88,9 +88,9 @@ func Start(config *models.Config, readySignal chan<- bool, cs *models.Collection
 				continue
 			}
 		}
-		log.Printf("adding new connection to shard: %v", shard.ShardID)
+		// log.Printf("adding new connection to shard: %v", shard.ShardID)
 		shard.DbState.AddConnection(conn.RemoteAddr().String(), &conn)
-		log.Printf("connected with client: %v", conn.RemoteAddr().String())
+		// log.Printf("connected with client: %v", conn.RemoteAddr().String())
 		go handleConnection(conn, cs, ts, kvServer, ps, shardConfigDb, shard)
 	}
 }
@@ -111,7 +111,7 @@ func handleConnection(conn net.Conn, cs *models.CollectionStore, ts *models.Tran
 	remoteAddress := conn.RemoteAddr().String()
 	clientId := utils.GenerateBase64ClientID()
 
-	log.Printf("handling connection: %v for slave %v", remoteAddress, kvServer.Config.Port)
+	// log.Printf("handling connection: %v for slave %v", remoteAddress, kvServer.Config.Port)
 
 	kvServer.HandleClientConnect(clientId, remoteAddress, conn)
 
@@ -129,7 +129,7 @@ func handleConnection(conn net.Conn, cs *models.CollectionStore, ts *models.Tran
 	for {
 		// Read the next line from the connection
 		command, err := reader.ReadString('\n')
-		log.Printf("parsed command: %v", command)
+		// log.Printf("parsed command: %v", command)
 		if err != nil || command == "" {
 			fmt.Println("Error reading from connection:", err)
 			return
@@ -161,12 +161,12 @@ func handleConnection(conn net.Conn, cs *models.CollectionStore, ts *models.Tran
 		default:
 
 			result := ExecuteCommand(cmd, cs, ts, clientConfig, kvServer, ps)
-			log.Printf("result for cmd: %v -------- %v", cmd, result)
-			bytesWritten, err := fmt.Fprintln(conn, result)
+			// log.Printf("result for cmd: %v -------- %v", cmd, result)
+			_, err := fmt.Fprintln(conn, result)
 			if err != nil {
 				log.Printf("error writing to the connection: %v : [%v]", conn, err)
 			}
-			log.Printf("bytes written to conn: %v ----------- %v", conn, bytesWritten)
+			// log.Printf("bytes written to conn: %v ----------- %v", conn, bytesWritten)
 
 		}
 	}
