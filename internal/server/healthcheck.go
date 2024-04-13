@@ -41,7 +41,6 @@ func sendPing(address string) bool {
 		log.Printf("Error reading PONG: %v\n", err)
 		return false
 	}
-	log.Printf("response: %v", response)
 
 	return strings.TrimSpace(response) == "PONG"
 }

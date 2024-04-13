@@ -41,7 +41,7 @@ func ParseCommand(rawCommand string) *Command {
 		CollectionName: collectionName,
 		Args:           Args,
 	}
-	log.Printf("current cmd: %v", cmd)
+	// log.Printf("current cmd: %v", cmd)
 	return cmd
 }
 

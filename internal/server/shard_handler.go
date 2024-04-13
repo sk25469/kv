@@ -11,10 +11,10 @@ import (
 	"github.com/sk25469/kv/utils"
 )
 
-func StartShard(wg *sync.WaitGroup, shard *models.Shard, shardReady chan bool, shardList *models.ShardsList, shardConfigDb *models.ShardDbConfig) {
+func StartShard(wg *sync.WaitGroup, shard *models.Shard, shardReady chan bool, shardList *models.ShardsList, shardConfigDb *models.ShardDbConfig, ch *models.ConsistentHash) {
 
 	defer wg.Done()
-	shardID := utils.GetShardID()
+	shardID := utils.GenerateBase64ClientID()
 	log.Printf("Starting shard with ID: %v\n", shardID)
 
 	dbStates := models.NewDbState()
@@ -85,6 +85,8 @@ func StartShard(wg *sync.WaitGroup, shard *models.Shard, shardReady chan bool, s
 			time.Sleep(30 * time.Second)
 		}
 	}()
+
+	ch.AddNode(shardID)
 
 	// Periodically check server health
 	go StartHealthCheck(dbStates, ticker, shardConfigDb, shard)

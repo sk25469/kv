@@ -7,7 +7,7 @@ import (
 
 type Shard struct {
 	// Fields
-	ShardID int
+	ShardID string
 	Nodes   []*KVServer
 	DbState *DbState
 }
@@ -80,7 +80,7 @@ func (shardsList *ShardsList) RemoveShard(shard *Shard) {
 	}
 }
 
-func (shardsList *ShardsList) GetShard(shardID int) *Shard {
+func (shardsList *ShardsList) GetShard(shardID string) *Shard {
 	// Code
 	for _, shard := range shardsList.Shards {
 		if shard.ShardID == shardID {

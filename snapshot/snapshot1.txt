@@ -1,3 +1,7 @@
 {"Name":"SET","CollectionName":"c1","Args":["k1","v1"],"Result":""}
 {"Name":"SET","CollectionName":"","Args":[],"Result":""}
 {"Name":"SET","CollectionName":"","Args":[],"Result":""}
+{"Name":"SET","CollectionName":"c1","Args":["k111","f231"],"Result":""}
+{"Name":"SET","CollectionName":"c1","Args":["k2323","v2323"],"Result":""}
+{"Name":"SET","CollectionName":"c11","Args":["k232","v2323"],"Result":""}
+{"Name":"SET","CollectionName":"C1","Args":["K2323","VDFSFA"],"Result":""}

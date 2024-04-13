@@ -12,6 +12,7 @@ import (
 )
 
 func main() {
+	utils.AsciiArt()
 	shardList := models.NewShardsList()
 
 	// Read the JSON config path
@@ -20,6 +21,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// new consistent hash ch
+	ch := models.NewConsistentHash()
 
 	var shardConfig models.ShardConfig
 	shardConfig.JsonUnmarshal(jsonData)
@@ -35,12 +39,15 @@ func main() {
 		shardStarted := make(chan bool)
 
 		wg.Add(1)
-		go server.StartShard(&wg, shard, shardStarted, shardList, shardDbConfig)
+		go server.StartShard(&wg, shard, shardStarted, shardList, shardDbConfig, ch)
 		<-shardStarted
 		log.Printf("Shard with ID %v started\n", shardDbConfig.ShardID)
 	}
 
-	time.Sleep(10 * time.Second)
+	wg.Add(1)
+	go server.RouteRequestsToShards(utils.SERVER_PORT, ch, shardList)
+
+	time.Sleep(30 * time.Second)
 	server.ShutdownServer(shardList.Shards[0].Nodes[0])
 
 	wg.Wait()
