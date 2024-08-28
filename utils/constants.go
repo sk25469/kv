@@ -22,8 +22,8 @@ const (
 	CLEANUP_DURATION      = time.Duration(1 * time.Minute)
 	TRANSACTIONAL         = 0
 	ACTIVE                = 1
-	SNAPSHOT_DIRECTORY    = "/home/sahilsarwar/Desktop/open-source/kv/snapshot/"
-	CONF_DIRECTORY        = "/home/sahilsarwar/Desktop/open-source/kv/conf/"
+	SNAPSHOT_DIRECTORY    = "/home/sahilsarwar/projects/kv/snapshot/"
+	CONF_DIRECTORY        = "/home/sahilsarwar/projects/kv/conf/"
 	PUB_SUB               = 2
 	SUBSCRIBE             = "SUBSCRIBE"
 	PUBLISH               = "PUBLISH"
