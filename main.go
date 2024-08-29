@@ -48,7 +48,7 @@ func main() {
 	go server.RouteRequestsToShards(utils.SERVER_PORT, ch, shardList)
 
 	time.Sleep(30 * time.Second)
-	server.ShutdownServer(shardList.Shards[0].Nodes[0])
+	// server.ShutdownServer(shardList.Shards[0].Nodes[0])
 
 	wg.Wait()
 }
