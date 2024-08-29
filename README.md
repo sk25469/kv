@@ -12,7 +12,7 @@ This project is a key-value store implemented in Go, designed to provide a robus
 * **TTL for Keys**: Automatically expire and remove keys after a specified duration.
 
 * **Transactions**: Group multiple operations in a single, atomic action.
-Pub-Sub: Implement a publisher-subscriber model for message passing.
+* **Pub-Sub**: Implement a publisher-subscriber model for message passing.
 
 
 * **Authentication**: Secure access to the key-value store.
