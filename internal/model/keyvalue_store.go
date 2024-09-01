@@ -48,6 +48,11 @@ func (kv *KeyValueStore) Set(key, value string) {
 func (kv *KeyValueStore) Get(key string) string {
 	kv.mu.RLock()
 	defer kv.mu.RUnlock()
+	log.Printf("key: %v", key)
+	if _, ok := kv.store[key]; !ok {
+		log.Printf("no value for key: %v", key)
+		return "ERROR: key doesn't exist"
+	}
 	log.Printf("value for key: %v = %v", key, kv.store[key])
 	return kv.store[key].Value
 }

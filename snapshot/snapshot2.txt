@@ -1,1 +1,1 @@
-{"Name":"SET","CollectionName":"something","Args":["key1","value1"],"Result":""}
+{"Name":"SET","CollectionName":"c1","Args":["k1","v3"],"Result":""}

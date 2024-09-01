@@ -3,7 +3,9 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"math/rand"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -52,18 +54,24 @@ func MapToJSON(data interface{}) (string, error) {
 	}
 	return string(jsonBytes), nil
 }
-
 func ParseDuration(input string) (time.Duration, error) {
-	parts := strings.Split(input, "")
-	duration := time.Duration(0)
+	// Regular expression to match durations like "10s", "5m", "2h", etc.
+	re := regexp.MustCompile(`(\d+)([hms])`)
+	matches := re.FindAllStringSubmatch(input, -1)
 
-	for i := 0; i < len(parts); i += 2 {
-		value, err := strconv.Atoi(parts[i])
+	if matches == nil {
+		return 0, fmt.Errorf("invalid duration format")
+	}
+
+	var duration time.Duration
+	for _, match := range matches {
+		value, err := strconv.Atoi(match[1])
 		if err != nil {
 			return 0, err
 		}
 
-		unit := parts[i+1]
+		unit := match[2]
+		log.Printf("value: %v --- unit %v", value, unit)
 		switch unit {
 		case "h":
 			duration += time.Duration(value) * time.Hour
@@ -78,7 +86,6 @@ func ParseDuration(input string) (time.Duration, error) {
 
 	return duration, nil
 }
-
 func AsciiArt() {
 	art := `          _____               _____          
          /\    \             /\    \         

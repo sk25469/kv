@@ -32,6 +32,7 @@ func NewKVServer(config *Config) *KVServer {
 			Username: config.Username,
 			Password: []byte(config.GetPassword()),
 		},
+		mu: sync.Mutex{},
 	}
 }
 

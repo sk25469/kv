@@ -69,7 +69,7 @@ func (cs *CollectionStore) GetKeyInCollection(collectionName, key string) string
 	coll, ok := cs.collections[collectionName]
 	if !ok {
 		log.Printf("collection with %v not found", collectionName)
-		return "" // Collection not found
+		return "ERROR: collection doesn't exist" // Collection not found
 	}
 
 	// Get the value from the collection
