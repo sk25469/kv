@@ -16,6 +16,7 @@ func NewPubSub() *PubSub {
 	return &PubSub{
 		topics:  make(map[string][]chan string),
 		clients: make(map[string]*ClientConfig),
+		Mutex:   sync.Mutex{},
 	}
 }
 
