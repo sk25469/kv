@@ -1,21 +1,28 @@
 package main
 
 import (
-	"log"
 	"os"
 	"sync"
 
+	"github.com/sirupsen/logrus"
 	models "github.com/sk25469/kv/internal/model"
 	"github.com/sk25469/kv/internal/server"
+	"github.com/sk25469/kv/logger"
 	"github.com/sk25469/kv/utils"
 )
+
+// logger
+var log *logrus.Logger
 
 func main() {
 	utils.AsciiArt()
 	shardList := models.NewShardsList()
 
+	logger.InitLogger()
+	log = logger.GetLogger()
+
 	// Read the JSON config path
-	log.Print("Reading shard config file...\n")
+	log.Info("Reading shard config file...\n")
 	jsonData, err := os.ReadFile(utils.SHARD_CONFIG_FILE)
 	if err != nil {
 		log.Fatal(err)
@@ -27,7 +34,7 @@ func main() {
 	var shardConfig models.ShardConfig
 	shardConfig.JsonUnmarshal(jsonData)
 
-	log.Print("Starting shard...\n")
+	log.Info("Starting shard...\n")
 	checkSnapshotFileAndCreate(shardConfig)
 
 	var wg sync.WaitGroup
@@ -40,7 +47,7 @@ func main() {
 		wg.Add(1)
 		go server.StartShard(&wg, shard, shardStarted, shardList, shardDbConfig, ch)
 		<-shardStarted
-		log.Printf("Shard with ID %v started\n", shardDbConfig.ShardID)
+		log.Infof("Shard with ID %v started\n", shardDbConfig.ShardID)
 	}
 
 	wg.Add(1)
@@ -56,15 +63,15 @@ func checkSnapshotFileAndCreate(shardConfig models.ShardConfig) error {
 	for _, shard := range shardConfig.ShardList {
 		snapshotPath := shard.SnapshotPath
 		if _, err := os.Stat(snapshotPath); os.IsNotExist(err) {
-			log.Printf("Snapshot file not found at %s. Creating a new snapshot...\n", snapshotPath)
+			log.Infof("Snapshot file not found at %s. Creating a new snapshot...\n", snapshotPath)
 			// create new snapshotpath.txt file here
 			_, err := os.Create(snapshotPath)
 			if err != nil {
-				log.Printf("error creating snapshot file: %v", err)
+				log.Infof("error creating snapshot file: %v", err)
 				return err
 			}
 		} else {
-			log.Printf("Snapshot file found at %s\n", snapshotPath)
+			log.Infof("Snapshot file found at %s\n", snapshotPath)
 		}
 	}
 	return nil
