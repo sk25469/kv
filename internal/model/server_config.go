@@ -6,6 +6,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/sk25469/kv/utils"
 )
 
 type Config struct {
@@ -67,7 +69,7 @@ func LoadConfig(filename string) (*Config, error) {
 		case "username":
 			config.Username = value
 		case "password":
-			hashedPassword, err := CreateHashedPassword(value)
+			hashedPassword, err := utils.CreateHashedPassword(value)
 			if err != nil {
 				log.Printf("error generating hashed password: %v", err)
 				return &Config{}, err

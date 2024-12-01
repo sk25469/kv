@@ -1,7 +1,6 @@
 package models
 
 import (
-	"log"
 	"net"
 	"sync"
 	"time"
@@ -94,13 +93,4 @@ func (s *KVServer) Authenticate(username, password string) (string, bool) {
 	}
 
 	return "auth successful", true
-}
-
-func CreateHashedPassword(password string) (string, error) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		log.Printf("error generating hashed password: %v", err)
-		return "", err
-	}
-	return string(hashedPassword), nil
 }

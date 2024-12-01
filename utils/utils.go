@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // a random no. between 1 and 100
@@ -86,6 +87,26 @@ func ParseDuration(input string) (time.Duration, error) {
 
 	return duration, nil
 }
+
+func CreateHashedPassword(password string) (string, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		log.Printf("error generating hashed password: %v", err)
+		return "", err
+	}
+	return string(hashedPassword), nil
+}
+
+func ParseMaxConnections(maxConnStr string) int {
+	maxConn, err := strconv.Atoi(maxConnStr)
+	if err != nil {
+		// Handle error
+		log.Printf("unable to parse maxConn: %v", err)
+		return 10
+	}
+	return maxConn
+}
+
 func AsciiArt() {
 	art := `          _____               _____          
          /\    \             /\    \         
