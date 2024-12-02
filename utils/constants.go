@@ -43,4 +43,7 @@ const (
 	MAKE_SLAVE            = "MAKE_SLAVE"
 	CONFIG                = "CONFIG"
 	PING                  = "PING"
+	COMM                  = "COMM"
+	KV_ETCD_ENDPOINT      = "http://localhost:2379"
+	KV_ETCD_KEY           = "/kv/"
 )

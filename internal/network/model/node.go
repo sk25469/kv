@@ -10,12 +10,14 @@ import (
 )
 
 type NodeConfig struct {
-	IP             string
-	Port           string
-	MaxConnections int
-	username       string
-	password       string
-	IsMaster       bool
+	ID             string `json:"id"`
+	IP             string `json:"ip"`
+	Port           string `json:"port"`
+	MaxConnections int    `json:"max_connections"`
+	username       string `json:"username"`
+	password       string `json:"password"`
+	IsMaster       bool   `json:"is_master"`
+	EtcdEndpoints  []string
 }
 
 func NewNodeConfig(filename string) *NodeConfig {
@@ -39,10 +41,16 @@ func loadConfig(filename string) (*NodeConfig, error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		parts := strings.Split(line, " ")
-		if len(parts) != 2 {
+		if strings.HasPrefix(parts[0], "#") || line == "" {
 			continue
 		}
 		key := strings.TrimSpace(parts[0])
+		var etcdEnpointValues []string
+
+		for i := 1; i < len(parts); i++ {
+			etcdEnpointValues = append(etcdEnpointValues, strings.TrimSpace(parts[i]))
+		}
+
 		value := strings.TrimSpace(parts[1])
 		switch key {
 		case "ip":
@@ -60,6 +68,8 @@ func loadConfig(filename string) (*NodeConfig, error) {
 				return &NodeConfig{}, err
 			}
 			config.password = hashedPassword
+		case "etcd_endpoints":
+			config.EtcdEndpoints = etcdEnpointValues
 		}
 	}
 
@@ -68,4 +78,9 @@ func loadConfig(filename string) (*NodeConfig, error) {
 	}
 
 	return &config, nil
+}
+
+func (n *NodeConfig) SetNodeID() string {
+	n.ID = utils.GenerateBase64ClientID()
+	return n.ID
 }

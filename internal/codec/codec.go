@@ -1,26 +1,50 @@
 package codec
 
-import codec_model "github.com/sk25469/kv/internal/codec/model"
+import (
+	"errors"
+	"strings"
+
+	codec_model "github.com/sk25469/kv/internal/codec/model"
+	network "github.com/sk25469/kv/internal/network/model"
+)
 
 type ICodec interface {
-	Encode(string) (*codec_model.Command, error)
-	Decode(*codec_model.Command) ([]byte, error)
+	Encode(data string, sendTo, sentFrom interface{}) (interface{}, error)
+	Decode(data interface{}) (interface{}, error)
 }
 
-type CodecLayer struct {
-	Command *codec_model.Command
+type CodecLayerParams struct {
+	CommandCodecLayerService ICommandCodec
+	CommCodecLayerService    ICommCodec
 }
 
-func NewCodecLayer() *CodecLayer {
-	return &CodecLayer{
-		Command: &codec_model.Command{},
+type CodecLayerService struct {
+	commandCodecLayerService *CommandCodecLayer
+	commCodecLayerService    *CommCodecLayer
+}
+
+func NewCodecLayerService() *CodecLayerService {
+	return &CodecLayerService{
+		commandCodecLayerService: NewCommandCodecLayer(),
+		commCodecLayerService:    NewCommCodecLayer(),
 	}
 }
 
-func (c *CodecLayer) Encode(data string) (*codec_model.Command, error) {
-	return c.Command.Encode(data), nil
+func (c *CodecLayerService) Encode(data string, sendTo, sentFrom interface{}) (interface{}, error) {
+	if strings.HasPrefix(data, "COMM:") {
+		return c.commCodecLayerService.Encode(codec_model.CommandType(data), sendTo.(*network.NodeConfig), sentFrom.(*network.NodeConfig))
+	}
+	return c.commandCodecLayerService.Encode(data), nil
 }
 
-func (c *CodecLayer) Decode(cmd *codec_model.Command) ([]byte, error) {
-	return []byte(cmd.Decode()), nil
+func (c *CodecLayerService) Decode(data interface{}) (string, error) {
+	switch v := data.(type) {
+	case *codec_model.Command:
+		return v.Decode(), nil
+	case *codec_model.CommunicationModel:
+		res, err := v.Decode()
+		return string(res), err
+	default:
+		return "", errors.New("unknown message type")
+	}
 }

@@ -1,7 +1,13 @@
 // memory_hashmap.go
 package storage
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/sk25469/kv/logger"
+)
+
+var log = logger.NewPackageLogger("storage")
 
 type InMemoryHashMap struct {
 	data map[string]string

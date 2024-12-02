@@ -1,15 +1,50 @@
 package model
 
-import "strings"
+import (
+	"encoding/json"
+	"strings"
+
+	network_model "github.com/sk25469/kv/internal/network/model"
+)
 
 // CommandType represents the type of command
 type CommandType string
 
 const (
-	Set    CommandType = "SET"
-	Get    CommandType = "GET"
-	Delete CommandType = "DEL"
+	Set          CommandType = "SET"
+	Get          CommandType = "GET"
+	Delete       CommandType = "DEL"
+	IAM          CommandType = "COMM:IAM"
+	HEALTH_CHECK CommandType = "COMM:HEALTH_CHECK"
+	ECHO         CommandType = "COMM:ECHO"
+	STOP         CommandType = "COMM:STOP"
 )
+
+type CommunicationModel struct {
+	Command  CommandType               `json:"command"`
+	SendTo   *network_model.NodeConfig `json:"send_to"`
+	SentFrom *network_model.NodeConfig `json:"sent_from"`
+}
+
+func (c *CommunicationModel) ToJSON() ([]byte, error) {
+	jsonData, err := json.Marshal(c)
+	if err != nil {
+		return []byte{}, err
+	}
+	return jsonData, nil
+}
+
+func (c *CommunicationModel) Encode(cmdType CommandType, sendTo, sentFrom *network_model.NodeConfig) *CommunicationModel {
+	return &CommunicationModel{
+		Command:  cmdType,
+		SendTo:   sendTo,
+		SentFrom: sentFrom,
+	}
+}
+
+func (c *CommunicationModel) Decode() ([]byte, error) {
+	return c.ToJSON()
+}
 
 type Command struct {
 	Type  CommandType

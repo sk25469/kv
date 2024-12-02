@@ -80,13 +80,22 @@
 package main
 
 import (
+	"flag"
+
 	"github.com/sk25469/kv/internal/network"
+	node_config "github.com/sk25469/kv/internal/network/model"
 	"github.com/sk25469/kv/utils"
 )
 
 func main() {
+	// Define command-line flags
+	configPath := flag.String("config", utils.MASTER_CONFIG_FILE, "Path to master config file")
+
+	// Parse flags
+	flag.Parse()
+	utils.AsciiArt()
 	networkLayer := network.NewNetworkService(network.NetworkServiceParams{
-		NodeConfigPath: utils.MASTER_CONFIG_FILE,
+		NodeConfig: node_config.NewNodeConfig(*configPath),
 	})
 
 	networkLayer.Start()

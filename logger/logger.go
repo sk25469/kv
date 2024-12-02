@@ -2,48 +2,105 @@
 package logger
 
 import (
+	"io"
 	"os"
+	"path"
+	"sync"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-var log *logrus.Logger
+var (
+	instance *logrus.Logger
+	once     sync.Once
+)
 
-// InitLogger initializes the global logger with settings
-func InitLogger() *logrus.Logger {
-	// Create logs directory if it doesn't exist
-	if _, err := os.Stat("logs"); os.IsNotExist(err) {
-		err := os.Mkdir("logs", 0755)
-		if err != nil {
-			log.Fatalf("Failed to create logs directory: %v", err)
-		}
-	}
-
-	log = logrus.New()
-
-	// Set the format to JSON or text as per preference
-	log.SetFormatter(&logrus.JSONFormatter{})
-
-	// Set the log level, can be configured via environment or as required
-	log.SetLevel(logrus.InfoLevel)
-
-	// Configure rotating file with lumberjack
-	log.SetOutput(&lumberjack.Logger{
-		Filename:   "logs/server.log",
-		MaxSize:    10, // megabytes
-		MaxBackups: 5,
-		MaxAge:     30,   // days
-		Compress:   true, // compress old log files
-	})
-
-	return log
+type Config struct {
+	LogLevel     string
+	LogFile      string
+	MaxSize      int // megabytes
+	MaxBackups   int
+	MaxAge       int // days
+	Compress     bool
+	ReportCaller bool
+	JSONFormat   bool
 }
 
-// GetLogger returns the configured logger
+func InitLogger(config Config) *logrus.Logger {
+	once.Do(func() {
+		instance = logrus.New()
+
+		// Set log level
+		level, err := logrus.ParseLevel(config.LogLevel)
+		if err != nil {
+			level = logrus.InfoLevel
+		}
+		instance.SetLevel(level)
+
+		// Configure output writers
+		writers := []io.Writer{os.Stdout} // Always write to console
+
+		if config.LogFile != "" {
+			// Create log directory if it doesn't exist
+			logDir := path.Dir(config.LogFile)
+			if err := os.MkdirAll(logDir, 0755); err != nil {
+				panic(err)
+			}
+
+			// Configure log rotation
+			fileWriter := &lumberjack.Logger{
+				Filename:   config.LogFile,
+				MaxSize:    config.MaxSize,
+				MaxBackups: config.MaxBackups,
+				MaxAge:     config.MaxAge,
+				Compress:   config.Compress,
+			}
+			writers = append(writers, fileWriter)
+		}
+
+		// Set multi-writer
+		instance.SetOutput(io.MultiWriter(writers...))
+
+		// Configure formatter
+		if config.JSONFormat {
+			instance.SetFormatter(&logrus.JSONFormatter{
+				TimestampFormat: time.RFC3339,
+			})
+		} else {
+			instance.SetFormatter(&logrus.TextFormatter{
+				FullTimestamp:   true,
+				TimestampFormat: time.RFC3339,
+			})
+		}
+
+		instance.SetReportCaller(config.ReportCaller)
+	})
+
+	return instance
+}
+
 func GetLogger() *logrus.Logger {
-	if log == nil {
-		return InitLogger()
+	if instance == nil {
+		// Default configuration if not initialized
+		InitLogger(Config{
+			LogLevel:   "info",
+			LogFile:    "logs/app.log",
+			MaxSize:    100,
+			MaxBackups: 3,
+			MaxAge:     28,
+			Compress:   true,
+		})
 	}
-	return log
+	return instance
+}
+
+// Helper functions for structured logging
+func NewPackageLogger(key string) *logrus.Entry {
+	return GetLogger().WithField("package", key)
+}
+
+func WithFields(fields logrus.Fields) *logrus.Entry {
+	return GetLogger().WithFields(fields)
 }
