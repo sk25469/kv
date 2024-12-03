@@ -2,6 +2,7 @@ package network
 
 import (
 	"bufio"
+	"encoding/json"
 	"log"
 	"os"
 	"strings"
@@ -17,7 +18,6 @@ type NodeConfig struct {
 	username       string `json:"username"`
 	password       string `json:"password"`
 	IsMaster       bool   `json:"is_master"`
-	EtcdEndpoints  []string
 }
 
 func NewNodeConfig(filename string) *NodeConfig {
@@ -45,12 +45,6 @@ func loadConfig(filename string) (*NodeConfig, error) {
 			continue
 		}
 		key := strings.TrimSpace(parts[0])
-		var etcdEnpointValues []string
-
-		for i := 1; i < len(parts); i++ {
-			etcdEnpointValues = append(etcdEnpointValues, strings.TrimSpace(parts[i]))
-		}
-
 		value := strings.TrimSpace(parts[1])
 		switch key {
 		case "ip":
@@ -68,8 +62,6 @@ func loadConfig(filename string) (*NodeConfig, error) {
 				return &NodeConfig{}, err
 			}
 			config.password = hashedPassword
-		case "etcd_endpoints":
-			config.EtcdEndpoints = etcdEnpointValues
 		}
 	}
 
@@ -83,4 +75,23 @@ func loadConfig(filename string) (*NodeConfig, error) {
 func (n *NodeConfig) SetNodeID() string {
 	n.ID = utils.GenerateBase64ClientID()
 	return n.ID
+}
+
+func (n *NodeConfig) ToJson() string {
+	json, err := utils.ConvertStructToJSON(n)
+	if err != nil {
+		log.Printf("error converting struct to json: %v", err)
+		return ""
+	}
+	return json
+}
+
+func FromJSON(bytes []byte) (*NodeConfig, error) {
+	var res *NodeConfig
+	err := json.Unmarshal(bytes, &res)
+	if err != nil {
+		log.Printf("error unmarshalling json: %v", err)
+		return nil, err
+	}
+	return res, nil
 }

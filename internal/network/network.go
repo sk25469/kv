@@ -6,15 +6,15 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"time"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/sk25469/kv/internal/codec"
 	"github.com/sk25469/kv/internal/comm"
 	"github.com/sk25469/kv/internal/core"
 	network "github.com/sk25469/kv/internal/network/model"
 	"github.com/sk25469/kv/logger"
-	"github.com/sk25469/kv/utils"
-	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 var log = logger.NewPackageLogger("network")
@@ -40,63 +40,69 @@ type NetworkService struct {
 	coreLayer          *core.CoreService
 	codecLayer         *codec.CodecLayerService
 	communicationLayer *comm.CommunicationService
-	etcdClient         *clientv3.Client
+	listener           net.Listener
 }
 
 func NewNetworkService(params NetworkServiceParams) *NetworkService {
-	etcdClient, err := clientv3.New(clientv3.Config{
-		Endpoints:   params.NodeConfig.EtcdEndpoints,
-		DialTimeout: 5 * time.Second,
-	})
-	if err != nil {
-		log.Fatalf("Error initializing etcd client: %v", err)
-	}
+
 	return &NetworkService{
 		nodeConfig:         params.NodeConfig,
 		coreLayer:          core.NewCoreService(),
 		codecLayer:         codec.NewCodecLayerService(),
 		communicationLayer: comm.NewCommunicationService(),
-		etcdClient:         etcdClient,
 	}
 }
 
 func (n *NetworkService) Start() error {
 	// Start TCP server
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%v", n.nodeConfig.Port))
 	if err != nil {
 		log.Error("Error starting server:", err)
 		return err
 	}
 	defer listener.Close()
+	n.listener = listener
 	log.Infof("Server is listening on port %v...\n", n.nodeConfig.Port)
 
-	nodeId := n.nodeConfig.SetNodeID()
+	// Signal handling for graceful shutdown
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	// Register the node with etcd
-	err = n.registerNode()
-	if err != nil {
-		log.Errorf("Error registering node with etcd: %v", err)
-		return err
-	}
+	go func() {
+		<-sigChan
+		log.Println("Received shutdown signal")
+		n.Stop()
+		cancel()
+	}()
+
+	n.nodeConfig.SetNodeID()
 
 	// Discover other nodes from etcd
-	err = n.discoverNodes()
+	err = n.communicationLayer.DiscoverNodes()
 	if err != nil {
 		log.Errorf("Error discovering nodes from etcd: %v", err)
 		return err
 	}
 
-	// add the node to its own topology map
-	err = n.communicationLayer.AddNode(nodeId, n.nodeConfig)
+	// Register the node with etcd
+	err = n.communicationLayer.RegisterNode(n.nodeConfig)
 	if err != nil {
-		log.Errorf("Error adding node to the topology map: %v", err)
+		log.Errorf("Error registering node with etcd: %v", err)
 		return err
 	}
 
-	// choose a master
-	masterNode := n.communicationLayer.ChooseLeader()
-	log.Infof("Master node: %v\n", masterNode)
+	// // add the node to its own topology map
+	// err = n.communicationLayer.AddNode(nodeId, n.nodeConfig)
+	// if err != nil {
+	// 	log.Errorf("Error adding node to the topology map: %v", err)
+	// 	return err
+	// }
+
+	// // choose a master
+	masterNode, _ := n.communicationLayer.GetMasterNode()
+	log.Infof("Master node: %v\n", masterNode.ID)
 
 	for {
 		conn, err := listener.Accept()
@@ -116,8 +122,12 @@ func (n *NetworkService) Start() error {
 }
 
 func (n *NetworkService) Stop() error {
+	if n.listener != nil {
+		n.listener.Close()
+	}
 	// remove the node from the topology map
 	n.communicationLayer.RemoveNode(n.nodeConfig.ID)
+	log.Printf("Node %v removed from the topology map\n", n.nodeConfig.ID)
 	// stop the server
 	return nil
 }
@@ -152,45 +162,4 @@ func (n *NetworkService) handleConnection(conn net.Conn) {
 			log.Errorf("error writing to the connection: %v : [%v]", conn, err)
 		}
 	}
-}
-
-func (n *NetworkService) registerNode() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	key := fmt.Sprintf("%v/%s", utils.KV_ETCD_ENDPOINT, n.nodeConfig.ID)
-	value := fmt.Sprintf("%v:%v", n.nodeConfig.IP, n.nodeConfig.Port)
-
-	_, err := n.etcdClient.Put(ctx, key, value)
-	if err != nil {
-		return fmt.Errorf("failed to register node with etcd: %v", err)
-	}
-
-	return nil
-}
-
-func (n *NetworkService) discoverNodes() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	resp, err := n.etcdClient.Get(ctx, utils.KV_ETCD_ENDPOINT, clientv3.WithPrefix())
-	if err != nil {
-		return fmt.Errorf("failed to discover nodes from etcd: %v", err)
-	}
-
-	for _, kv := range resp.Kvs {
-		nodeID := string(kv.Key[len(utils.KV_ETCD_ENDPOINT):])
-		address := string(kv.Value)
-
-		// Add node to the topology map
-		nodeConfig := network.NodeConfig{
-			ID: nodeID,
-			IP: address,
-		}
-		err := n.communicationLayer.AddNode(nodeID, &nodeConfig)
-		if err != nil {
-			log.Errorf("Error adding node to the topology map: %v", err)
-		}
-	}
-	return nil
 }

@@ -15,6 +15,8 @@ var (
 	SHARD_CONFIG_FILE  = CONF_DIRECTORY + "shard-conf.json"
 )
 
+var EtcdEndpoints = []string{"http://localhost:2379"}
+
 const (
 	SERVER_PORT = "4321"
 	// Define the interval for the health check

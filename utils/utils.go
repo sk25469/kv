@@ -107,6 +107,14 @@ func ParseMaxConnections(maxConnStr string) int {
 	return maxConn
 }
 
+func ConvertStructToJSON(data interface{}) (string, error) {
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		return "", err
+	}
+	return string(jsonBytes), nil
+}
+
 func AsciiArt() {
 	art := `          _____               _____          
          /\    \             /\    \         
