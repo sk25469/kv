@@ -101,7 +101,6 @@ func (c *CommunicationService) AddNode(nodeID string, node *network.NodeConfig) 
 }
 
 func (c *CommunicationService) RemoveNode(nodeID string) error {
-	c.topologyMap.RemoveNode(nodeID)
 	c.ChooseLeader()
 	// delete the key from etcd
 	nodeConfig, err := c.GetNode(nodeID)
@@ -109,6 +108,7 @@ func (c *CommunicationService) RemoveNode(nodeID string) error {
 		return fmt.Errorf("failed to get node config: %v", err)
 	}
 	c.removeNode(nodeConfig)
+	c.topologyMap.RemoveNode(nodeID)
 
 	return nil
 }
@@ -224,7 +224,7 @@ func (c *CommunicationService) removeNode(nodeConfig *network.NodeConfig) error 
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
 
-	key := fmt.Sprintf("%v/%s", utils.KV_ETCD_KEY, nodeConfig.ID)
+	key := fmt.Sprintf("%v%s", utils.KV_ETCD_KEY, nodeConfig.ID)
 
 	_, err := c.etcdClient.Delete(ctx, key)
 	if err != nil {
