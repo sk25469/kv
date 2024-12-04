@@ -44,12 +44,11 @@ type NetworkService struct {
 }
 
 func NewNetworkService(params NetworkServiceParams) *NetworkService {
-
 	return &NetworkService{
 		nodeConfig:         params.NodeConfig,
-		coreLayer:          core.NewCoreService(),
-		codecLayer:         codec.NewCodecLayerService(),
-		communicationLayer: comm.NewCommunicationService(),
+		coreLayer:          params.CoreLayer.(*core.CoreService),
+		codecLayer:         params.CodecLayer.(*codec.CodecLayerService),
+		communicationLayer: params.CommunicationLayer.(*comm.CommunicationService),
 	}
 }
 
@@ -145,21 +144,25 @@ func (n *NetworkService) handleConnection(conn net.Conn) {
 		command, err := reader.ReadString('\n')
 		// log.Printf("parsed command: %v", command)
 		if err != nil || command == "" {
-			// fmt.Println("Error reading from connection:", err)
+			log.Println("Error reading from connection:", err)
 			return
 		}
+		log.Printf("received command: %v", command)
 		cmd, err := n.codecLayer.Encode(command, n.nodeConfig, nil)
 		if err != nil {
 			log.Printf("error encoding command: %v", err)
+			return
 		}
 		log.Infof("encoded command: %v", cmd)
-		res, err := n.coreLayer.RunCommand(cmd)
+		res, err := n.coreLayer.RunCommand(cmd, n.nodeConfig)
 		if err != nil {
 			log.Errorf("error running command: %v", err)
+			return
 		}
 		_, err = fmt.Fprintln(conn, string(res))
 		if err != nil {
 			log.Errorf("error writing to the connection: %v : [%v]", conn, err)
+			return
 		}
 	}
 }

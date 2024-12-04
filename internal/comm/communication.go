@@ -18,11 +18,11 @@ var log = logger.NewPackageLogger("comm")
 
 type ICommunication interface {
 	// Send a message to a specific node
-	SendMessage(nodeConfig *network.NodeConfig, message interface{}) error
+	SendMessage(nodeConfig *network.NodeConfig, id string, message []byte) error
 	// Broadcast a message to all nodes
-	BroadcastMessage(currentNodeID string, message interface{}) error
+	BroadcastMessage(currentNodeID string, id string, message []byte) error
 	// choose a leader
-	ChooseLeader(nodes *network.TopologyMap) string
+	ChooseLeader() string
 
 	AddNode(nodeID string, node *network.NodeConfig) error
 
@@ -63,19 +63,15 @@ func NewCommunicationService() *CommunicationService {
 	}
 }
 
-func (c *CommunicationService) SendMessage(nodeConfig *network.NodeConfig, message interface{}) error {
-	req := message.(*codec_model.CommunicationModel)
-	switch req.Command {
-	case codec_model.IAM:
-		c.sendMessage(nodeConfig, req)
-	}
+func (c *CommunicationService) SendMessage(nodeConfig *network.NodeConfig, id string, message []byte) error {
+	c.sendMessage(nodeConfig, id, message)
 	return nil
 }
 
-func (c *CommunicationService) BroadcastMessage(currentNodeID string, message interface{}) error {
+func (c *CommunicationService) BroadcastMessage(currentNodeID string, id string, message []byte) error {
 	for _, node := range c.GetTopologyMap().GetNodes() {
 		if node.ID != currentNodeID {
-			c.SendMessage(node, message)
+			c.SendMessage(node, id, message)
 		}
 	}
 	return nil
@@ -141,7 +137,7 @@ func (c *CommunicationService) DiscoverNodes() error {
 	return c.discoverNodes()
 }
 
-func (c *CommunicationService) sendMessage(node *network.NodeConfig, req *codec_model.CommunicationModel) {
+func (c *CommunicationService) sendMessage(node *network.NodeConfig, msgId string, req []byte) {
 	go func(node *network.NodeConfig) {
 		conn, err := net.Dial("tcp", node.IP+":"+node.Port)
 		if err != nil {
@@ -150,15 +146,11 @@ func (c *CommunicationService) sendMessage(node *network.NodeConfig, req *codec_
 		}
 		defer conn.Close()
 
-		reqInBytes, err := req.Decode()
-		if err != nil {
-			log.Errorf("Error decoding IAM message: %v", err)
-		}
-
-		_, err = conn.Write(reqInBytes)
+		_, err = conn.Write(req)
 		if err != nil {
 			log.Errorf("Error sending IAM message to node %v: %v", node.ID, err)
 		}
+		log.Info("Message sent to node: ", node.ID)
 	}(node)
 
 }
@@ -174,7 +166,7 @@ func (c *CommunicationService) registerNode(nodeConfig *network.NodeConfig) erro
 
 	c.ChooseLeader()
 
-	key := fmt.Sprintf("%v/%s", utils.KV_ETCD_KEY, nodeConfig.ID)
+	key := fmt.Sprintf("%v%s", utils.KV_ETCD_KEY, nodeConfig.ID)
 	updatedNodeConfig, err := c.GetNode(nodeConfig.ID)
 	if err != nil {
 		return fmt.Errorf("failed to get node config: %v", err)
@@ -185,6 +177,18 @@ func (c *CommunicationService) registerNode(nodeConfig *network.NodeConfig) erro
 	_, err = c.etcdClient.Put(ctx, key, value)
 	if err != nil {
 		return fmt.Errorf("failed to register node with etcd: %v", err)
+	}
+
+	// send IAM message to all nodes
+
+	for _, node := range c.GetTopologyMap().GetNodes() {
+		if node.ID != updatedNodeConfig.ID {
+			c.sendIAMMessage(node, &codec_model.CommunicationModel{
+				Command:  codec_model.IAM,
+				SendTo:   node,
+				SentFrom: updatedNodeConfig,
+			})
+		}
 	}
 
 	return nil
@@ -228,4 +232,16 @@ func (c *CommunicationService) removeNode(nodeConfig *network.NodeConfig) error 
 	}
 
 	return nil
+}
+
+func (c *CommunicationService) sendIAMMessage(nodeConfig *network.NodeConfig, message interface{}) {
+	req := message.(*codec_model.CommunicationModel)
+	switch req.Command {
+	case codec_model.IAM:
+		messageToSend, err := req.ToBytes()
+		if err != nil {
+			log.Errorf("Error marshalling IAM message: %v", err)
+		}
+		c.sendMessage(nodeConfig, req.ID.String(), messageToSend)
+	}
 }

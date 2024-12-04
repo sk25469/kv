@@ -80,10 +80,19 @@
 package main
 
 import (
+	"context"
 	"flag"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
+	"github.com/sk25469/kv/internal/codec"
+	"github.com/sk25469/kv/internal/comm"
+	"github.com/sk25469/kv/internal/core"
 	"github.com/sk25469/kv/internal/network"
 	node_config "github.com/sk25469/kv/internal/network/model"
+	"github.com/sk25469/kv/internal/replication"
 	"github.com/sk25469/kv/utils"
 )
 
@@ -94,10 +103,57 @@ func main() {
 	// Parse flags
 	flag.Parse()
 	utils.AsciiArt()
-	networkLayer := network.NewNetworkService(network.NetworkServiceParams{
-		NodeConfig: node_config.NewNodeConfig(*configPath),
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Set up signal handling
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-sigChan
+		log.Println("Received shutdown signal")
+		cancel()
+	}()
+
+	communicationService := comm.NewCommunicationService()
+	replicationService := replication.NewReplicationService(replication.ReplicationServiceParams{
+		CommunicationLayer: communicationService,
 	})
 
-	networkLayer.Start()
+	coreLayer := core.NewCoreService(
+		core.CoreServiceParams{
+			CommunicationLayer: communicationService,
+			ReplicationLayer:   replicationService,
+		},
+	)
+
+	codecLayer := codec.NewCodecLayerService()
+
+	networkLayer := network.NewNetworkService(network.NetworkServiceParams{
+		NodeConfig:         node_config.NewNodeConfig(*configPath),
+		CoreLayer:          coreLayer,
+		CommunicationLayer: communicationService,
+		CodecLayer:         codecLayer,
+	})
+
+	// Create a context that is cancelled on termination signals
+
+	go func() {
+		if err := networkLayer.Start(); err != nil {
+			log.Fatalf("Error starting network layer: %v", err)
+		}
+	}()
+
+	// Wait for the context to be cancelled
+	<-ctx.Done()
+
+	// Stop the network service
+	if err := networkLayer.Stop(); err != nil {
+		log.Fatalf("Error stopping network layer: %v", err)
+	}
+
+	log.Println("Server stopped gracefully")
 
 }

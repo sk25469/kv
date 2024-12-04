@@ -6,7 +6,7 @@ import (
 
 type ICommandCodec interface {
 	Encode(rawCommand string) *codec_model.Command
-	Decode() string
+	Decode() []byte
 }
 
 type CommandCodecLayer struct {
@@ -23,6 +23,6 @@ func (c *CommandCodecLayer) Encode(rawCommand string) *codec_model.Command {
 	return c.CommandModel.Encode(rawCommand)
 }
 
-func (c *CommandCodecLayer) Decode() string {
+func (c *CommandCodecLayer) Decode() []byte {
 	return c.CommandModel.Decode()
 }

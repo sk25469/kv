@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/google/uuid"
 	network_model "github.com/sk25469/kv/internal/network/model"
 )
 
@@ -21,32 +22,49 @@ const (
 )
 
 type CommunicationModel struct {
+	ID       uuid.UUID                 `json:"id"`
 	Command  CommandType               `json:"command"`
 	SendTo   *network_model.NodeConfig `json:"send_to"`
 	SentFrom *network_model.NodeConfig `json:"sent_from"`
 }
 
-func (c *CommunicationModel) ToJSON() ([]byte, error) {
+func (c *CommunicationModel) ToBytes() ([]byte, error) {
 	jsonData, err := json.Marshal(c)
 	if err != nil {
 		return []byte{}, err
 	}
+	jsonData = append(jsonData, '\n')
 	return jsonData, nil
 }
 
-func (c *CommunicationModel) Encode(cmdType CommandType, sendTo, sentFrom *network_model.NodeConfig) *CommunicationModel {
+func NewCommunicationModel(cmdType CommandType, sendTo, sentFrom *network_model.NodeConfig) *CommunicationModel {
 	return &CommunicationModel{
 		Command:  cmdType,
 		SendTo:   sendTo,
 		SentFrom: sentFrom,
+		ID:       uuid.New(),
 	}
 }
 
+func (c *CommunicationModel) FromJSON(data []byte) {
+	json.Unmarshal(data, c)
+}
+
+func CommunicationModelToJSON(data []byte) (*CommunicationModel, error) {
+	var model CommunicationModel
+	err := json.Unmarshal(data, &model)
+	if err != nil {
+		return nil, err
+	}
+	return &model, nil
+}
+
 func (c *CommunicationModel) Decode() ([]byte, error) {
-	return c.ToJSON()
+	return c.ToBytes()
 }
 
 type Command struct {
+	ID    uuid.UUID
 	Type  CommandType
 	Name  string   // Name of the command
 	Args  []string // Arguments of the command
@@ -83,6 +101,7 @@ func (c *Command) Encode(rawCommand string) *Command {
 		Args:  Args,
 		Key:   key,
 		Value: value,
+		ID:    uuid.New(),
 	}
 
 	// Determine the command type based on the command name
@@ -98,6 +117,6 @@ func (c *Command) Encode(rawCommand string) *Command {
 	return cmd
 }
 
-func (c *Command) Decode() string {
-	return c.Name + " " + strings.Join(c.Args, " ")
+func (c *Command) Decode() []byte {
+	return []byte(c.Name + " " + strings.Join(c.Args, " ") + "\n")
 }

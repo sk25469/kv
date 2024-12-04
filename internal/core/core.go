@@ -3,39 +3,50 @@ package core
 import (
 	codec_model "github.com/sk25469/kv/internal/codec/model"
 	"github.com/sk25469/kv/internal/comm"
+	network "github.com/sk25469/kv/internal/network/model"
+	"github.com/sk25469/kv/internal/replication"
 	"github.com/sk25469/kv/internal/storage"
+	"github.com/sk25469/kv/logger"
 )
 
+var log = logger.NewPackageLogger("core")
+
 type ICore interface {
-	RunCommand(interface{}) ([]byte, error)
+	RunCommand(interface{}, *network.NodeConfig) ([]byte, error)
 }
 
 type CoreServiceParams struct {
 	StorageLayer       storage.IStorage
 	CommunicationLayer comm.ICommunication
+	ReplicationLayer   replication.IReplication
 }
 
 type CoreService struct {
 	storageLayer       storage.IStorage
 	communicationLayer *comm.CommunicationService
+	replicationLayer   *replication.ReplicationService
 }
 
-func NewCoreService() *CoreService {
+func NewCoreService(params CoreServiceParams) *CoreService {
 	return &CoreService{
 		storageLayer:       storage.NewInMemoryHashMap(),
-		communicationLayer: comm.NewCommunicationService(),
+		communicationLayer: params.CommunicationLayer.(*comm.CommunicationService),
+		replicationLayer:   params.ReplicationLayer.(*replication.ReplicationService),
 	}
 }
 
-func (c *CoreService) RunCommand(data interface{}) ([]byte, error) {
+func (c *CoreService) RunCommand(data interface{}, nodeConfig *network.NodeConfig) ([]byte, error) {
 	switch v := data.(type) {
 	case *codec_model.Command:
+		cmdInBytes := v.Decode()
 		switch v.Type {
 		case codec_model.Set:
 			err := c.storageLayer.Set(v.Key, v.Value)
 			if err != nil {
 				return nil, err
 			}
+			c.replicationLayer.ReplicateData(nodeConfig, v.ID.String(), cmdInBytes)
+
 			return []byte("write successfull"), nil
 		case codec_model.Get:
 			res, err := c.storageLayer.Get(v.Key)
@@ -48,17 +59,15 @@ func (c *CoreService) RunCommand(data interface{}) ([]byte, error) {
 			if err != nil {
 				return nil, err
 			}
+			c.replicationLayer.ReplicateData(nodeConfig, v.ID.String(), cmdInBytes)
+
 			return []byte("delete successfull"), nil
 		}
 	case *codec_model.CommunicationModel:
 		switch v.Command {
 		case codec_model.IAM:
-			// node added in the network layer
-			err := c.communicationLayer.AddNode(v.SendTo.ID, v.SendTo)
-			if err != nil {
-				return nil, err
-			}
-			return []byte("node added successfully"), nil
+			c.communicationLayer.AddNode(v.SentFrom.ID, v.SentFrom)
+			log.Infof("Node added to topology map: %v", v.SentFrom.ID)
 		}
 	}
 	return nil, nil

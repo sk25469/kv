@@ -21,7 +21,7 @@ func NewCommCodecLayer() *CommCodecLayer {
 }
 
 func (c *CommCodecLayer) Encode(cmdType codec_model.CommandType, sendTo, sentFrom *network_model.NodeConfig) (*codec_model.CommunicationModel, error) {
-	return c.CommunicationModel.Encode(cmdType, sendTo, sentFrom), nil
+	return codec_model.NewCommunicationModel(cmdType, sendTo, sentFrom), nil
 }
 
 func (c *CommCodecLayer) Decode() (string, error) {
