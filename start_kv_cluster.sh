@@ -16,6 +16,8 @@ config_files=(
     # Add more config files as needed
 )
 
+go build
+
 # Loop through the config files and start a KV cluster for each
 for config_file in "${config_files[@]}"; do
     start_kv_cluster "$config_file"

@@ -131,8 +131,10 @@ func main() {
 
 	codecLayer := codec.NewCodecLayerService()
 
+	nodeConfig := node_config.NewNodeConfig(*configPath)
+
 	networkLayer := network.NewNetworkService(network.NetworkServiceParams{
-		NodeConfig:         node_config.NewNodeConfig(*configPath),
+		NodeConfig:         nodeConfig,
 		CoreLayer:          coreLayer,
 		CommunicationLayer: communicationService,
 		CodecLayer:         codecLayer,
@@ -145,6 +147,16 @@ func main() {
 			log.Fatalf("Error starting network layer: %v", err)
 		}
 	}()
+
+	// start the health check service
+	healthCheckService := network.NewHealthCheckService(network.HealthCheckServiceParams{
+		Port:                 nodeConfig.HealthCheckPort,
+		NetworkService:       networkLayer,
+		CommunicationService: communicationService,
+	})
+
+	healthCheckService.StartHealthCheck()
+	healthCheckService.StartPeriodicHealthChecks(utils.HEALTH_CHECK_INTERVAL)
 
 	// Wait for the context to be cancelled
 	<-ctx.Done()

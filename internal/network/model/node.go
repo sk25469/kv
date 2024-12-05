@@ -5,19 +5,21 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/sk25469/kv/utils"
 )
 
 type NodeConfig struct {
-	ID             string `json:"id"`
-	IP             string `json:"ip"`
-	Port           string `json:"port"`
-	MaxConnections int    `json:"max_connections"`
-	username       string `json:"username"`
-	password       string `json:"password"`
-	IsMaster       bool   `json:"is_master"`
+	ID              string `json:"id"`
+	IP              string `json:"ip"`
+	Port            string `json:"port"`
+	MaxConnections  int    `json:"max_connections"`
+	username        string `json:"username"`
+	password        string `json:"password"`
+	IsMaster        bool   `json:"is_master"`
+	HealthCheckPort int    `json:"health_check_port"`
 }
 
 func NewNodeConfig(filename string) *NodeConfig {
@@ -55,6 +57,13 @@ func loadConfig(filename string) (*NodeConfig, error) {
 			config.MaxConnections = utils.ParseMaxConnections(value)
 		case "username":
 			config.username = value
+		case "health_check_port":
+			port, err := strconv.Atoi(value)
+			if err != nil {
+				log.Printf("error converting health_check_port to int: %v", err)
+				return &NodeConfig{}, err
+			}
+			config.HealthCheckPort = port
 		case "password":
 			hashedPassword, err := utils.CreateHashedPassword(value)
 			if err != nil {

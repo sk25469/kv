@@ -92,13 +92,6 @@ func (n *NetworkService) Start() error {
 		return err
 	}
 
-	// // add the node to its own topology map
-	// err = n.communicationLayer.AddNode(nodeId, n.nodeConfig)
-	// if err != nil {
-	// 	log.Errorf("Error adding node to the topology map: %v", err)
-	// 	return err
-	// }
-
 	// // choose a master
 	masterNode, _ := n.communicationLayer.GetMasterNode()
 	log.Infof("Master node: %v\n", masterNode.ID)
@@ -116,7 +109,7 @@ func (n *NetworkService) Start() error {
 			}
 		}
 		// handle connection
-		go n.handleConnection(conn)
+		go n.handleConnection(ctx, conn)
 	}
 }
 
@@ -131,13 +124,11 @@ func (n *NetworkService) Stop() error {
 	return nil
 }
 
-func (n *NetworkService) handleConnection(conn net.Conn) {
+func (n *NetworkService) handleConnection(ctx context.Context, conn net.Conn) {
 	// handle connection
 	defer conn.Close()
 	log.Infof("Connection from %v\n", conn.RemoteAddr().String())
 	reader := bufio.NewReader(conn)
-	// remoteAddress := conn.RemoteAddr().String()
-	// clientId := utils.GenerateBase64ClientID()
 
 	for {
 		// Read the next line from the connection
@@ -147,22 +138,36 @@ func (n *NetworkService) handleConnection(conn net.Conn) {
 			log.Println("Error reading from connection:", err)
 			return
 		}
-		log.Printf("received command: %v", command)
-		cmd, err := n.codecLayer.Encode(command, n.nodeConfig, nil)
-		if err != nil {
-			log.Printf("error encoding command: %v", err)
+		select {
+		case <-ctx.Done():
+			log.Println("Context cancelled, finishing last command")
+			// Process the last command before shutting down
+			n.processCommand(command, conn)
 			return
-		}
-		log.Infof("encoded command: %v", cmd)
-		res, err := n.coreLayer.RunCommand(cmd, n.nodeConfig)
-		if err != nil {
-			log.Errorf("error running command: %v", err)
-			return
-		}
-		_, err = fmt.Fprintln(conn, string(res))
-		if err != nil {
-			log.Errorf("error writing to the connection: %v : [%v]", conn, err)
-			return
+		default:
+			n.processCommand(command, conn)
 		}
 	}
+}
+
+func (n *NetworkService) processCommand(command string, conn net.Conn) {
+	cmd, err := n.codecLayer.Encode(command, n.nodeConfig, nil)
+	if err != nil {
+		log.Printf("error encoding command: %v", err)
+		return
+	}
+	log.Infof("encoded command: %v", cmd)
+	res, err := n.coreLayer.RunCommand(cmd, n.nodeConfig)
+	if err != nil {
+		log.Errorf("error running command: %v", err)
+		return
+	}
+	_, err = fmt.Fprintln(conn, string(res))
+	if err != nil {
+		log.Errorf("error writing to the connection: %v : [%v]", conn, err)
+	}
+}
+
+func (n *NetworkService) IsListenerActive() bool {
+	return n.listener != nil
 }

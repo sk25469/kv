@@ -156,7 +156,7 @@ func (c *CommunicationService) sendMessage(node *network.NodeConfig, msgId strin
 }
 
 func (c *CommunicationService) registerNode(nodeConfig *network.NodeConfig) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DEFAULT_CTX_TIMEOUT)
 	defer cancel()
 
 	err := c.AddNode(nodeConfig.ID, nodeConfig)
@@ -195,7 +195,7 @@ func (c *CommunicationService) registerNode(nodeConfig *network.NodeConfig) erro
 }
 
 func (c *CommunicationService) discoverNodes() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DEFAULT_CTX_TIMEOUT)
 	defer cancel()
 
 	resp, err := c.etcdClient.Get(ctx, utils.KV_ETCD_KEY, clientv3.WithPrefix())
@@ -221,7 +221,7 @@ func (c *CommunicationService) discoverNodes() error {
 }
 
 func (c *CommunicationService) removeNode(nodeConfig *network.NodeConfig) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DEFAULT_CTX_TIMEOUT)
 	defer cancel()
 
 	key := fmt.Sprintf("%v%s", utils.KV_ETCD_KEY, nodeConfig.ID)
@@ -244,4 +244,15 @@ func (c *CommunicationService) sendIAMMessage(nodeConfig *network.NodeConfig, me
 		}
 		c.sendMessage(nodeConfig, req.ID.String(), messageToSend)
 	}
+}
+
+func (c *CommunicationService) GetEtcdClientHealth() error {
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DEFAULT_CTX_TIMEOUT)
+	defer cancel()
+
+	_, err := c.etcdClient.Get(ctx, "health")
+	if err != nil {
+		return fmt.Errorf("failed to get etcd client health: %v", err)
+	}
+	return nil
 }
