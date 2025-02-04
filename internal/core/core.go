@@ -46,7 +46,6 @@ func (c *CoreService) RunCommand(data interface{}, nodeConfig *network.NodeConfi
 				return nil, err
 			}
 			c.replicationLayer.ReplicateData(nodeConfig, v.ID.String(), cmdInBytes)
-
 			return []byte("write successfull"), nil
 		case codec_model.Get:
 			res, err := c.storageLayer.Get(v.Key)

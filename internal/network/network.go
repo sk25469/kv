@@ -30,6 +30,7 @@ type NetworkServiceParams struct {
 	CoreLayer          core.ICore
 	CodecLayer         codec.ICodec
 	CommunicationLayer comm.ICommunication
+	ConnectionMap      map[string]net.Conn
 }
 
 // NetworkService represents the network service
@@ -40,6 +41,7 @@ type NetworkService struct {
 	coreLayer          *core.CoreService
 	codecLayer         *codec.CodecLayerService
 	communicationLayer *comm.CommunicationService
+	connectionMap      map[string]net.Conn
 	listener           net.Listener
 }
 
@@ -49,6 +51,7 @@ func NewNetworkService(params NetworkServiceParams) *NetworkService {
 		coreLayer:          params.CoreLayer.(*core.CoreService),
 		codecLayer:         params.CodecLayer.(*codec.CodecLayerService),
 		communicationLayer: params.CommunicationLayer.(*comm.CommunicationService),
+		connectionMap:      params.ConnectionMap,
 	}
 }
 
@@ -109,7 +112,8 @@ func (n *NetworkService) Start() error {
 			}
 		}
 		// handle connection
-		go n.handleConnection(ctx, conn)
+		n.setNetworkConnection(n.nodeConfig.ID, conn)
+		go n.handleConnection(ctx)
 	}
 }
 
@@ -124,9 +128,16 @@ func (n *NetworkService) Stop() error {
 	return nil
 }
 
-func (n *NetworkService) handleConnection(ctx context.Context, conn net.Conn) {
+func (n *NetworkService) handleConnection(ctx context.Context) {
+	conn, ok := n.connectionMap[n.nodeConfig.ID]
+	if !ok {
+		log.Errorf("Connection not found for node %v", n.nodeConfig.ID)
+		return
+	}
 	// handle connection
 	defer conn.Close()
+	defer n.removeNetworkConnection(n.nodeConfig.ID)
+
 	log.Infof("Connection from %v\n", conn.RemoteAddr().String())
 	reader := bufio.NewReader(conn)
 
@@ -142,15 +153,20 @@ func (n *NetworkService) handleConnection(ctx context.Context, conn net.Conn) {
 		case <-ctx.Done():
 			log.Println("Context cancelled, finishing last command")
 			// Process the last command before shutting down
-			n.processCommand(command, conn)
+			n.ProcessCommand(command)
 			return
 		default:
-			n.processCommand(command, conn)
+			n.ProcessCommand(command)
 		}
 	}
 }
 
-func (n *NetworkService) processCommand(command string, conn net.Conn) {
+func (n *NetworkService) ProcessCommand(command string) {
+	conn, ok := n.connectionMap[n.nodeConfig.ID]
+	if !ok {
+		log.Errorf("Connection not found for node %v", n.nodeConfig.ID)
+		return
+	}
 	cmd, err := n.codecLayer.Encode(command, n.nodeConfig, nil)
 	if err != nil {
 		log.Printf("error encoding command: %v", err)
@@ -170,4 +186,12 @@ func (n *NetworkService) processCommand(command string, conn net.Conn) {
 
 func (n *NetworkService) IsListenerActive() bool {
 	return n.listener != nil
+}
+
+func (n *NetworkService) setNetworkConnection(nodeID string, conn net.Conn) {
+	n.connectionMap[nodeID] = conn
+}
+
+func (n *NetworkService) removeNetworkConnection(nodeID string) {
+	delete(n.connectionMap, nodeID)
 }
