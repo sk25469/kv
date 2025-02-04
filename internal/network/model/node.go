@@ -29,6 +29,7 @@ func NewNodeConfig(filename string) *NodeConfig {
 		log.Printf("error loading config: %v", err)
 		return &NodeConfig{}
 	}
+	config.ID = setNodeID()
 	return config
 }
 
@@ -84,9 +85,8 @@ func loadConfig(filename string) (*NodeConfig, error) {
 	return &config, nil
 }
 
-func (n *NodeConfig) SetNodeID() string {
-	n.ID = utils.GenerateBase64ClientID()
-	return n.ID
+func setNodeID() string {
+	return utils.GenerateBase64ClientID()
 }
 
 func (n *NodeConfig) ToJson() string {

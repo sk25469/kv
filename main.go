@@ -83,7 +83,6 @@ import (
 	"context"
 	"flag"
 	"log"
-	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -156,7 +155,6 @@ func main() {
 		CoreLayer:          coreLayer,
 		CommunicationLayer: communicationService,
 		CodecLayer:         codecLayer,
-		ConnectionMap:      make(map[string]net.Conn),
 	})
 
 	// Create a context that is cancelled on termination signals
