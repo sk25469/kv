@@ -20,6 +20,7 @@ type NodeConfig struct {
 	password        string `json:"password"`
 	IsMaster        bool   `json:"is_master"`
 	HealthCheckPort int    `json:"health_check_port"`
+	LogPath         string `json:"log_file_path"`
 }
 
 func NewNodeConfig(filename string) *NodeConfig {
@@ -71,6 +72,8 @@ func loadConfig(filename string) (*NodeConfig, error) {
 				return &NodeConfig{}, err
 			}
 			config.password = hashedPassword
+		case "log_file":
+			config.LogPath = value
 		}
 	}
 

@@ -91,9 +91,12 @@ import (
 	"github.com/sk25469/kv/internal/codec"
 	"github.com/sk25469/kv/internal/comm"
 	"github.com/sk25469/kv/internal/core"
+	"github.com/sk25469/kv/internal/middleware"
 	"github.com/sk25469/kv/internal/network"
 	node_config "github.com/sk25469/kv/internal/network/model"
 	"github.com/sk25469/kv/internal/replication"
+	"github.com/sk25469/kv/internal/storage"
+	storage_model "github.com/sk25469/kv/internal/storage/model"
 	"github.com/sk25469/kv/utils"
 )
 
@@ -123,16 +126,30 @@ func main() {
 		CommunicationLayer: communicationService,
 	})
 
+	storage, err := storage.NewStorage(storage.StorageServiceParams{
+		Type:      storage_model.InMemory,
+		Structure: storage_model.HashMap,
+	})
+	if err != nil {
+		log.Fatalf("Error creating storage: %v", err)
+	}
+
+	nodeConfig := node_config.NewNodeConfig(*configPath)
+
+	storageMiddleware, err := middleware.NewStorageMiddleware(storage, nodeConfig.LogPath, nodeConfig.ID)
+	if err != nil {
+		log.Fatalf("Error creating storage middleware: %v", err)
+	}
+
 	coreLayer := core.NewCoreService(
 		core.CoreServiceParams{
 			CommunicationLayer: communicationService,
 			ReplicationLayer:   replicationService,
+			StorageLayer:       storageMiddleware,
 		},
 	)
 
 	codecLayer := codec.NewCodecLayerService()
-
-	nodeConfig := node_config.NewNodeConfig(*configPath)
 
 	networkLayer := network.NewNetworkService(network.NetworkServiceParams{
 		NodeConfig:         nodeConfig,

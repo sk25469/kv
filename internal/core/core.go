@@ -3,9 +3,9 @@ package core
 import (
 	codec_model "github.com/sk25469/kv/internal/codec/model"
 	"github.com/sk25469/kv/internal/comm"
+	"github.com/sk25469/kv/internal/middleware"
 	network "github.com/sk25469/kv/internal/network/model"
 	"github.com/sk25469/kv/internal/replication"
-	"github.com/sk25469/kv/internal/storage"
 	"github.com/sk25469/kv/logger"
 )
 
@@ -16,20 +16,20 @@ type ICore interface {
 }
 
 type CoreServiceParams struct {
-	StorageLayer       storage.IStorage
+	StorageLayer       *middleware.StorageMiddleware
 	CommunicationLayer comm.ICommunication
 	ReplicationLayer   replication.IReplication
 }
 
 type CoreService struct {
-	storageLayer       storage.IStorage
+	storageLayer       *middleware.StorageMiddleware
 	communicationLayer *comm.CommunicationService
 	replicationLayer   *replication.ReplicationService
 }
 
 func NewCoreService(params CoreServiceParams) *CoreService {
 	return &CoreService{
-		storageLayer:       storage.NewInMemoryHashMap(),
+		storageLayer:       params.StorageLayer,
 		communicationLayer: params.CommunicationLayer.(*comm.CommunicationService),
 		replicationLayer:   params.ReplicationLayer.(*replication.ReplicationService),
 	}

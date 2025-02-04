@@ -4,7 +4,7 @@
 start_kv_cluster() {
     local config_file=$1
     echo "Starting KV cluster with config file: $config_file"
-    ./kv -config="$config_file" &
+    sudo ./kv -config="$config_file" &
 }
 
 # Array of configuration files
