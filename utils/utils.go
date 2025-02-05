@@ -3,12 +3,15 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"math/rand"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // a random no. between 1 and 100
@@ -52,18 +55,24 @@ func MapToJSON(data interface{}) (string, error) {
 	}
 	return string(jsonBytes), nil
 }
-
 func ParseDuration(input string) (time.Duration, error) {
-	parts := strings.Split(input, "")
-	duration := time.Duration(0)
+	// Regular expression to match durations like "10s", "5m", "2h", etc.
+	re := regexp.MustCompile(`(\d+)([hms])`)
+	matches := re.FindAllStringSubmatch(input, -1)
 
-	for i := 0; i < len(parts); i += 2 {
-		value, err := strconv.Atoi(parts[i])
+	if matches == nil {
+		return 0, fmt.Errorf("invalid duration format")
+	}
+
+	var duration time.Duration
+	for _, match := range matches {
+		value, err := strconv.Atoi(match[1])
 		if err != nil {
 			return 0, err
 		}
 
-		unit := parts[i+1]
+		unit := match[2]
+		log.Printf("value: %v --- unit %v", value, unit)
 		switch unit {
 		case "h":
 			duration += time.Duration(value) * time.Hour
@@ -77,6 +86,33 @@ func ParseDuration(input string) (time.Duration, error) {
 	}
 
 	return duration, nil
+}
+
+func CreateHashedPassword(password string) (string, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		log.Printf("error generating hashed password: %v", err)
+		return "", err
+	}
+	return string(hashedPassword), nil
+}
+
+func ParseMaxConnections(maxConnStr string) int {
+	maxConn, err := strconv.Atoi(maxConnStr)
+	if err != nil {
+		// Handle error
+		log.Printf("unable to parse maxConn: %v", err)
+		return 10
+	}
+	return maxConn
+}
+
+func ConvertStructToJSON(data interface{}) (string, error) {
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		return "", err
+	}
+	return string(jsonBytes), nil
 }
 
 func AsciiArt() {

@@ -1,1 +1,4 @@
 cmd/server/*.txt
+*.log
+.vscode
+*.log.gz

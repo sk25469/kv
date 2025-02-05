@@ -42,7 +42,7 @@ func sendRequestToShard(shardID string, conn *net.Conn, shardList *models.Shards
 	reader := bufio.NewReader(*conn)
 	command, err := reader.ReadString('\n')
 	if err != nil {
-		fmt.Println("Error reading from connection:", err)
+		// fmt.Println("Error reading from connection:", err)
 		return
 	}
 	shard := shardList.GetShard(shardID)

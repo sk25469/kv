@@ -131,7 +131,7 @@ func handleConnection(conn net.Conn, cs *models.CollectionStore, ts *models.Tran
 		command, err := reader.ReadString('\n')
 		// log.Printf("parsed command: %v", command)
 		if err != nil || command == "" {
-			fmt.Println("Error reading from connection:", err)
+			// fmt.Println("Error reading from connection:", err)
 			return
 		}
 		cmd := ParseCommand(command)
@@ -181,8 +181,8 @@ func handleInitLoad(cs *models.CollectionStore, shardConfig *models.ShardDbConfi
 	}
 	for _, cmd := range cmds {
 		if ShouldWriteLog(cmd) {
-			_ = ExecuteCommand(&cmd, cs, nil, &models.ClientConfig{ClientState: &models.ClientState{State: utils.ACTIVE, IsAuthenticated: true}}, &models.KVServer{Config: &models.Config{ProtectedMode: false}}, nil)
-			// log.Printf("successfully executed curr cmd: %v ------------ %v", cmd, result)
+			result := ExecuteCommand(&cmd, cs, nil, &models.ClientConfig{ClientState: &models.ClientState{State: utils.ACTIVE, IsAuthenticated: true}}, &models.KVServer{Config: &models.Config{ProtectedMode: false}}, nil)
+			log.Printf("successfully executed curr cmd: %v ------------ %v", cmd, result)
 		}
 	}
 	return nil
