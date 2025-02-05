@@ -1,6 +1,9 @@
 package middleware
 
 import (
+	"log"
+	"time"
+
 	wal "github.com/sk25469/kv/internal/persistence"
 	"github.com/sk25469/kv/internal/storage"
 )
@@ -54,6 +57,8 @@ func (sm *StorageMiddleware) Delete(key string) error {
 }
 
 func (sm *StorageMiddleware) Recover() error {
+	starTime := time.Now()
+
 	entries, err := sm.wal.Recover()
 	if err != nil {
 		return err
@@ -71,6 +76,8 @@ func (sm *StorageMiddleware) Recover() error {
 			}
 		}
 	}
+
+	log.Printf("Recovered %d entries in %v", len(entries), time.Since(starTime))
 
 	return nil
 }

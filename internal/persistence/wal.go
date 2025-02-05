@@ -99,8 +99,6 @@ func (w *FileWAL) Recover() ([]LogEntry, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	starTime := time.Now()
-
 	var entries []LogEntry
 	if _, err := w.file.Seek(0, 0); err != nil {
 		return nil, err
@@ -115,8 +113,6 @@ func (w *FileWAL) Recover() ([]LogEntry, error) {
 		}
 		entries = append(entries, entry)
 	}
-
-	log.Printf("Recovered %d entries in %v", len(entries), time.Since(starTime))
 
 	return entries, nil
 }
