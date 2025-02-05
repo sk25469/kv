@@ -29,7 +29,7 @@ spawn telnet localhost 7000
 expect "Connected"
 
 # Generate and send commands
-for {set i 0} {$i < 100000} {incr i} {
+for {set i 0} {$i < 1000000} {incr i} {
     set key [format "key_%d_%d" $i [expr int(rand() * 10000)]]
     set value [format "value_%d_%d" $i [expr int(rand() * 1000)]]
     

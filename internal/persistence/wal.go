@@ -2,7 +2,10 @@ package wal
 
 import (
 	"bufio"
+	"encoding/binary"
 	"encoding/json"
+	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -25,6 +28,11 @@ const (
 	FLUSH_INTERVAL    = 1 * time.Second
 	COMPACT_INTERVAL  = 1 * time.Second // Adjust based on your needs
 	COMPACT_THRESHOLD = 1024 * 1024 * 1 // 0.01MB threshold
+)
+
+const (
+	OpSet    byte = 1
+	OpDelete byte = 2
 )
 
 type LogEntry struct {
@@ -87,11 +95,8 @@ func (w *FileWAL) AppendLog(entry LogEntry) error {
 	w.sequence++
 	entry.Sequence = w.sequence
 
-	data, err := json.Marshal(entry)
-	if err != nil {
-		return err
-	}
-	_, err = w.writeBuffer.Write(append(data, '\n'))
+	data := encodeBinary(entry)
+	_, err := w.writeBuffer.Write(data)
 	return err
 }
 
@@ -99,17 +104,18 @@ func (w *FileWAL) Recover() ([]LogEntry, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	var entries []LogEntry
 	if _, err := w.file.Seek(0, 0); err != nil {
 		return nil, err
 	}
 
-	// TODO: decode each line individually
-	decoder := json.NewDecoder(w.file)
+	var entries []LogEntry
 	for {
-		var entry LogEntry
-		if err := decoder.Decode(&entry); err != nil {
+		entry, err := decodeBinary(w.file)
+		if err == io.EOF {
 			break
+		}
+		if err != nil {
+			return nil, err
 		}
 		entries = append(entries, entry)
 	}
@@ -244,4 +250,99 @@ func (w *FileWAL) periodicCompact() {
 			return
 		}
 	}
+}
+
+func encodeBinary(entry LogEntry) []byte {
+	// Calculate buffer size
+	size := 1 + 4 + len(entry.Key) + 8 // op + keyLen + key + sequence
+	if entry.Operation == SET {
+		size += 4 + len(entry.Value) // valueLen + value
+	}
+
+	buf := make([]byte, 0, size)
+
+	// Write operation
+	if entry.Operation == SET {
+		buf = append(buf, OpSet)
+	} else {
+		buf = append(buf, OpDelete)
+	}
+
+	// Write key length and key
+	keyLen := uint32(len(entry.Key))
+	lenBuf := make([]byte, 4)
+	binary.BigEndian.PutUint32(lenBuf, keyLen)
+	buf = append(buf, lenBuf...)
+	buf = append(buf, []byte(entry.Key)...)
+
+	// Write value for SET operations
+	if entry.Operation == SET {
+		valueLen := uint32(len(entry.Value))
+		binary.BigEndian.PutUint32(lenBuf, valueLen)
+		buf = append(buf, lenBuf...)
+		buf = append(buf, []byte(entry.Value)...)
+	}
+
+	// Write sequence
+	seqBuf := make([]byte, 8)
+	binary.BigEndian.PutUint64(seqBuf, entry.Sequence)
+	buf = append(buf, seqBuf...)
+
+	return buf
+}
+
+func decodeBinary(r io.Reader) (LogEntry, error) {
+	var entry LogEntry
+
+	// Read operation
+	opBuf := make([]byte, 1)
+	if _, err := io.ReadFull(r, opBuf); err != nil {
+		return entry, err
+	}
+
+	switch opBuf[0] {
+	case OpSet:
+		entry.Operation = SET
+	case OpDelete:
+		entry.Operation = DELETE
+	default:
+		return entry, fmt.Errorf("invalid operation: %d", opBuf[0])
+	}
+
+	// Read key length
+	lenBuf := make([]byte, 4)
+	if _, err := io.ReadFull(r, lenBuf); err != nil {
+		return entry, err
+	}
+	keyLen := binary.BigEndian.Uint32(lenBuf)
+
+	// Read key
+	keyBuf := make([]byte, keyLen)
+	if _, err := io.ReadFull(r, keyBuf); err != nil {
+		return entry, err
+	}
+	entry.Key = string(keyBuf)
+
+	// Read value for SET operations
+	if entry.Operation == SET {
+		if _, err := io.ReadFull(r, lenBuf); err != nil {
+			return entry, err
+		}
+		valueLen := binary.BigEndian.Uint32(lenBuf)
+
+		valueBuf := make([]byte, valueLen)
+		if _, err := io.ReadFull(r, valueBuf); err != nil {
+			return entry, err
+		}
+		entry.Value = string(valueBuf)
+	}
+
+	// Read sequence
+	seqBuf := make([]byte, 8)
+	if _, err := io.ReadFull(r, seqBuf); err != nil {
+		return entry, err
+	}
+	entry.Sequence = binary.BigEndian.Uint64(seqBuf)
+
+	return entry, nil
 }
