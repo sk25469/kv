@@ -135,9 +135,14 @@ func main() {
 
 	nodeConfig := node_config.NewNodeConfig(*configPath)
 
-	storageMiddleware, err := middleware.NewStorageMiddleware(storage, nodeConfig.LogPath, nodeConfig.ID)
+	storageMiddleware, err := middleware.NewStorageMiddleware(storage, nodeConfig.LogPath)
 	if err != nil {
 		log.Fatalf("Error creating storage middleware: %v", err)
+	}
+
+	err = storageMiddleware.Recover()
+	if err != nil {
+		log.Fatalf("Error recovering storage: %v", err)
 	}
 
 	coreLayer := core.NewCoreService(

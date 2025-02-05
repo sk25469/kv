@@ -6,9 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/sk25469/kv/internal/codec"
 	"github.com/sk25469/kv/internal/comm"
@@ -66,15 +63,15 @@ func (n *NetworkService) Start() error {
 	log.Infof("Server is listening on port %v...\n", n.nodeConfig.Port)
 
 	// Signal handling for graceful shutdown
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	// sigChan := make(chan os.Signal, 1)
+	// signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	go func() {
-		<-sigChan
-		log.Println("Received shutdown signal")
-		n.Stop()
-		cancel()
-	}()
+	// go func() {
+	// 	<-sigChan
+	// 	log.Println("Received shutdown signal")
+	// 	n.Stop()
+	// 	cancel()
+	// }()
 
 	// Discover other nodes from etcd
 	err = n.communicationLayer.DiscoverNodes()

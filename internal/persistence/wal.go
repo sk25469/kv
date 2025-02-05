@@ -2,7 +2,6 @@ package wal
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -15,8 +14,8 @@ type Operation string
 const (
 	SET              Operation = utils.SET
 	DELETE           Operation = utils.DEL
-	DEFAULT_LOG_DIR            = "/var/log/"
-	DEFAULT_LOG_FILE           = "kvstore"
+	DEFAULT_LOG_DIR            = "/var/lib/kvstore/"
+	DEFAULT_LOG_FILE           = "wal.log"
 )
 
 type LogEntry struct {
@@ -38,13 +37,18 @@ type FileWAL struct {
 	sequence uint64
 }
 
-func NewFileWAL(path string, nodeID string) (*FileWAL, error) {
-	// Set proper permissions for log file
-	logFileName := createDynamicLogFileName(nodeID)
-	logPath := filepath.Join(DEFAULT_LOG_DIR, logFileName)
-	if _, err := os.OpenFile(logPath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644); err != nil {
-		return nil, err
+func NewFileWAL(path string) (*FileWAL, error) {
+
+	// create folder if not exists
+	if _, err := os.Stat(DEFAULT_LOG_DIR); os.IsNotExist(err) {
+		err := os.Mkdir(DEFAULT_LOG_DIR, 0755)
+		if err != nil {
+			return nil, err
+		}
 	}
+
+	// Set proper permissions for log file
+	logPath := filepath.Join(DEFAULT_LOG_DIR, DEFAULT_LOG_FILE)
 
 	file, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {
@@ -99,13 +103,4 @@ func (w *FileWAL) Recover() ([]LogEntry, error) {
 
 func (w *FileWAL) Close() error {
 	return w.file.Close()
-}
-
-func createDynamicLogFileName(nodeID string) string {
-	// trim the nodeID to 8 characters
-	if len(nodeID) > 6 {
-		nodeID = nodeID[:6]
-	}
-	logFileName := fmt.Sprintf("%v-%v.log", DEFAULT_LOG_FILE, nodeID)
-	return logFileName
 }

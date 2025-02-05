@@ -10,8 +10,8 @@ type StorageMiddleware struct {
 	wal     wal.WAL
 }
 
-func NewStorageMiddleware(storage storage.IStorage, walPath, nodeID string) (*StorageMiddleware, error) {
-	w, err := wal.NewFileWAL(walPath, nodeID)
+func NewStorageMiddleware(storage storage.IStorage, walPath string) (*StorageMiddleware, error) {
+	w, err := wal.NewFileWAL(walPath)
 	if err != nil {
 		return nil, err
 	}

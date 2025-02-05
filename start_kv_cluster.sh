@@ -10,9 +10,9 @@ start_kv_cluster() {
 # Array of configuration files
 config_files=(
     "/home/sahilsarwar/projects/kv/conf/kv.conf"
-    "/home/sahilsarwar/projects/kv/conf/slave1.conf"
-    "/home/sahilsarwar/projects/kv/conf/slave2.conf"
-    "/home/sahilsarwar/projects/kv/conf/slave3.conf"
+    # "/home/sahilsarwar/projects/kv/conf/slave1.conf"
+    # "/home/sahilsarwar/projects/kv/conf/slave2.conf"
+    # "/home/sahilsarwar/projects/kv/conf/slave3.conf"
     # Add more config files as needed
 )
 
