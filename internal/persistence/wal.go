@@ -3,7 +3,6 @@ package wal
 import (
 	"bufio"
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -167,15 +166,18 @@ func (w *FileWAL) compactWAL() error {
 	keyEntries := make(map[string]LogEntry)
 
 	// Scan existing WAL
-	scanner := bufio.NewScanner(w.file)
-	for scanner.Scan() {
-		var entry LogEntry
-		if err := json.Unmarshal(scanner.Bytes(), &entry); err != nil {
-			continue
+	// scanner := bufio.NewScanner(w.file)
+	for {
+		entry, err := decodeBinary(w.file)
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
 		}
 
-		// Track only the latest sequence for each key
-		if seq, exists := latestSequence[entry.Key]; !exists || entry.Sequence > seq {
+		// Update latest sequence
+		if entry.Sequence > latestSequence[entry.Key] {
 			latestSequence[entry.Key] = entry.Sequence
 			keyEntries[entry.Key] = entry
 		}
@@ -191,13 +193,8 @@ func (w *FileWAL) compactWAL() error {
 
 	// Write only latest entries
 	for _, entry := range keyEntries {
-		data, err := json.Marshal(entry)
-		if err != nil {
-			tempFile.Close()
-			os.Remove(tempPath)
-			return err
-		}
-		if _, err := tempWriter.Write(append(data, '\n')); err != nil {
+		data := encodeBinary(entry)
+		if _, err := tempWriter.Write(data); err != nil {
 			tempFile.Close()
 			os.Remove(tempPath)
 			return err
