@@ -7,6 +7,7 @@ import (
 	network "github.com/sk25469/kv/internal/network/model"
 	"github.com/sk25469/kv/internal/replication"
 	"github.com/sk25469/kv/logger"
+	"go.uber.org/fx"
 )
 
 var log = logger.NewPackageLogger("core")
@@ -16,13 +17,15 @@ type ICore interface {
 }
 
 type CoreServiceParams struct {
-	StorageLayer       *middleware.StorageMiddleware
+	fx.In
+
+	StorageLayer       *middleware.CacheMiddleware
 	CommunicationLayer comm.ICommunication
 	ReplicationLayer   replication.IReplication
 }
 
 type CoreService struct {
-	storageLayer       *middleware.StorageMiddleware
+	storageLayer       *middleware.CacheMiddleware
 	communicationLayer *comm.CommunicationService
 	replicationLayer   *replication.ReplicationService
 }

@@ -4,6 +4,7 @@ import (
 	"github.com/sk25469/kv/internal/comm"
 	network "github.com/sk25469/kv/internal/network/model"
 	"github.com/sk25469/kv/logger"
+	"go.uber.org/fx"
 )
 
 var log = logger.NewPackageLogger("replication")
@@ -13,6 +14,8 @@ type IReplication interface {
 }
 
 type ReplicationServiceParams struct {
+	fx.In
+
 	CommunicationLayer comm.ICommunication
 }
 

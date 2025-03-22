@@ -23,8 +23,9 @@ require (
 	go.etcd.io/etcd/api/v3 v3.5.17 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.17 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
-	go.uber.org/multierr v1.6.0 // indirect
-	go.uber.org/zap v1.17.0 // indirect
+	go.uber.org/dig v1.18.0 // indirect
+	go.uber.org/multierr v1.10.0 // indirect
+	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/genproto v0.0.0-20230822172742-b8732ec3820d // indirect
@@ -37,6 +38,7 @@ require (
 require (
 	github.com/bits-and-blooms/bloom/v3 v3.7.0
 	github.com/sirupsen/logrus v1.9.3
+	go.uber.org/fx v1.23.0
 	golang.org/x/sys v0.19.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )

@@ -12,6 +12,7 @@ import (
 	"github.com/sk25469/kv/internal/core"
 	network "github.com/sk25469/kv/internal/network/model"
 	"github.com/sk25469/kv/logger"
+	"go.uber.org/fx"
 )
 
 var log = logger.NewPackageLogger("network")
@@ -23,6 +24,8 @@ type INetwork interface {
 }
 
 type NetworkServiceParams struct {
+	fx.In
+
 	NodeConfig         *network.NodeConfig
 	CoreLayer          core.ICore
 	CodecLayer         codec.ICodec

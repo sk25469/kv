@@ -1,7 +1,9 @@
 package middleware
 
 import (
+	"fmt"
 	"log"
+	"runtime"
 	"time"
 
 	wal "github.com/sk25469/kv/internal/persistence"
@@ -80,4 +82,21 @@ func (sm *StorageMiddleware) Recover() error {
 	log.Printf("Recovered %d entries in %v", len(entries), time.Since(starTime))
 
 	return nil
+}
+
+func (sm *StorageMiddleware) GetMemoryStats() string {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+
+	return fmt.Sprintf(
+		"Memory Stats:\n"+
+			"Alloc = %v MiB\n"+
+			"TotalAlloc = %v MiB\n"+
+			"Sys = %v MiB\n"+
+			"NumGC = %v\n",
+		m.Alloc/1024/1024,
+		m.TotalAlloc/1024/1024,
+		m.Sys/1024/1024,
+		m.NumGC,
+	)
 }

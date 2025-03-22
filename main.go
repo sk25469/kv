@@ -140,16 +140,20 @@ func main() {
 		log.Fatalf("Error creating storage middleware: %v", err)
 	}
 
+	cachedStorageMiddleware := middleware.NewCacheMiddleware(*storageMiddleware, middleware.NewLRUCache(1000))
+
 	err = storageMiddleware.Recover()
 	if err != nil {
 		log.Fatalf("Error recovering storage: %v", err)
 	}
 
+	log.Printf("current storage configs are: %v\n", storageMiddleware.GetMemoryStats())
+
 	coreLayer := core.NewCoreService(
 		core.CoreServiceParams{
 			CommunicationLayer: communicationService,
 			ReplicationLayer:   replicationService,
-			StorageLayer:       storageMiddleware,
+			StorageLayer:       cachedStorageMiddleware,
 		},
 	)
 
@@ -189,5 +193,10 @@ func main() {
 	}
 
 	log.Println("Server stopped gracefully")
+
+	// fx.New(
+	// 	app.Module(*configPath),
+	// 	fx.NopLogger,
+	// ).Run()
 
 }
