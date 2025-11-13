@@ -5,7 +5,8 @@ This project is a key-value store implemented in Go, designed to provide a robus
 
 ## Architecture
 
-![KV Architecture](https://github.com/sk25469/kv/assets/68475465/53cbefbc-d9bf-4530-a848-d983388f11d5)
+
+![KV Architecture](https://github.com/user-attachments/assets/ece31b04-5404-4f92-a950-c0a276f6a217)
 
 
 ## Features
